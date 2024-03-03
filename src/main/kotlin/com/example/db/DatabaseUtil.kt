@@ -12,7 +12,7 @@ object DatabaseUtil {
     fun init() {
         Database.connect(hikari())
         transaction {
-            SchemaUtils.create(CustomerTable)
+            SchemaUtils.create(CustomerTable, AddressTable)
         }
     }
 

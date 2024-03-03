@@ -13,15 +13,21 @@ data class Customer(
     val firstName: String,
     val lastName: String,
     val phone: Long,
+    val address: Address,
     val gender: String,
     val email: String,
     val password: String,
     val status: String
 )
 
-//fun hashedPassword(password: String): String {
-//    return Mac.getInstance("HmacSHA256").doFinal(password.toByteArray()).toString()
-//}
+@Serializable
+data class Address(
+    val id: Int,
+    val street: String,
+    val city: String,
+    val state: String,
+    val zip: String,
+)
 
 fun hashedPassword(password: String): String {
     val secret = Config.SECRET
@@ -31,3 +37,23 @@ fun hashedPassword(password: String): String {
     val hash = mac.doFinal(password.toByteArray())
     return Base64.getEncoder().encodeToString(hash)
 }
+
+@Serializable
+data class CustomerRequest(
+    val username: String,
+    val firstName: String,
+    val lastName: String,
+    val phone: Long,
+    val address: AddressRequest,
+    val gender: String,
+    val email: String,
+    val password: String
+)
+
+@Serializable
+data class AddressRequest(
+    val street: String,
+    val city: String,
+    val state: String,
+    val zip: String
+)

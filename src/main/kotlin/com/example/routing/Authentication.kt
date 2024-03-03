@@ -5,7 +5,7 @@ import com.example.commands.repo.customer.getCustomerByUsername
 import com.example.commands.repo.customer.insertCustomer
 import com.example.commands.repo.customer.signInCustomer
 import com.example.commands.repo.customer.signOutCustomer
-import com.example.models.Customer
+import com.example.models.CustomerRequest
 import com.example.models.CustomerSignInData
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -17,7 +17,7 @@ import io.ktor.server.routing.*
 fun Route.authentication() {
     route("/customer/signUp") {
         post {
-            val customer = call.receive(Customer::class)
+            val customer = call.receive(CustomerRequest::class)
             try {
                 insertCustomer(customer)
                 call.respond(HttpStatusCode.Created, "Customer created successfully")
