@@ -1,0 +1,21 @@
+openapi: "3.0.3"
+info:
+  title: "ktor_server API"
+  description: "ktor_server API"
+  version: "1.0.0"
+servers:
+  - url: "https://ktor_server"
+paths:
+  /:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Hello World!"
