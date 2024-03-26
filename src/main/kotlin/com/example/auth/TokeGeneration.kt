@@ -2,28 +2,24 @@ package com.example.auth
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import kotlinx.serialization.Serializable
 import java.util.*
 
-@Serializable
-data class TokePair(val accessToken: String, val refreshToken: String)
-
-fun generateTokens(username: String, secret: String, issuer: String, audience: String): TokePair {
-    val algorithm = Algorithm.HMAC256(secret)
-    val now = System.currentTimeMillis()
-    val accessToken = JWT.create()
+fun generateTokens(email: String, secret: String, issuer: String, audience: String): String {
+    return JWT.create()
         .withAudience(audience)
         .withIssuer(issuer)
-        .withClaim("username", username)
-        .withExpiresAt(Date(now + 3600000))
-        .sign(algorithm)
+        .withClaim("email", email)
+        .withExpiresAt(Date(System.currentTimeMillis() + 31_536_000_000))
+        .sign(Algorithm.HMAC256(secret))
+}
 
-    val refreshToken = JWT.create()
+//generate tokens for employee with roles
+fun generateEmployeeTokens(email: String, secret: String, issuer: String, audience: String, role: String): String {
+    return JWT.create()
         .withAudience(audience)
         .withIssuer(issuer)
-        .withClaim("username", username)
-        .withExpiresAt(Date(now + 604800000))
-        .sign(algorithm)
-
-    return TokePair(accessToken, refreshToken)
+        .withClaim("email", email)
+        .withClaim("role", role)
+        .withExpiresAt(Date(System.currentTimeMillis() + 31_536_000_000))
+        .sign(Algorithm.HMAC256(secret))
 }

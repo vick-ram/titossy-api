@@ -1,7 +1,11 @@
 package com.example
 
-import com.example.db.DatabaseUtil
-import com.example.plugins.*
+import com.example.db.util.DatabaseUtil
+import com.example.plugins.auth.configureAuthentication
+import com.example.plugins.cors.configurecORS
+import com.example.plugins.error.configureException
+import com.example.plugins.routing.configureRouting
+import com.example.plugins.serialization.configureSerialization
 import io.ktor.server.application.*
 
 fun main(args: Array<String>) {
@@ -14,5 +18,6 @@ fun Application.module() {
     configureAuthentication()
     configureRouting()
     configureException()
-    configureWebSockets()
+//    configureWebSockets()
+    configurecORS()
 }
