@@ -1,5 +1,6 @@
 package com.example.models.supplier
 
+import com.example.exceptions.password
 import kotlinx.serialization.Serializable
 import org.valiktor.functions.*
 import org.valiktor.validate
@@ -9,14 +10,14 @@ data class SupplierSignInData(
     val email: String,
     val password: String
 ) {
-    init {
-        validate(this){
+    fun validate(): SupplierSignInData {
+        validate(this) {
             validate(SupplierSignInData::email)
-                .isNotBlank()
                 .isEmail()
             validate(SupplierSignInData::password)
                 .isNotBlank()
-                .matches(Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+\$"))
+                .password()
         }
+        return this
     }
 }

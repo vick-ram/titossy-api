@@ -6,45 +6,78 @@ import com.example.db.product.Product
 import com.example.db.product.ProductTable
 import com.example.db.supplier.Supplier
 import com.example.db.supplier.SupplierTable
-import org.jetbrains.exposed.dao.IntEntity
-import org.jetbrains.exposed.dao.IntEntityClass
+import com.example.db.util.CustomStringEntity
+import com.example.db.util.CustomStringEntityClass
+import com.example.db.util.CustomStringTable
+import com.example.db.util.PGEnum
+import com.example.models.purchase_order.OrderStatus
+import com.example.models.purchase_order.PurchaseOrderItemResponse
+import com.example.models.purchase_order.PurchaseOrderResponse
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.javatime.datetime
-import java.time.LocalDateTime
+import org.jetbrains.exposed.sql.javatime.date
+import java.time.LocalDate
 
-object OrderItemsTable: IntIdTable() {
-    val orderId = reference("order_id", OrderTable, onDelete = ReferenceOption.CASCADE)
-    val productId = reference("product_id", ProductTable, onDelete = ReferenceOption.CASCADE)
-    val quantity = integer("quantity")
-    val price = decimal("price", 10, 2)
-}
-
-class OrderItem(id: EntityID<Int>): IntEntity(id) {
-    companion object: IntEntityClass<OrderItem>(OrderItemsTable)
-
-    var orderId by Order referencedOn OrderItemsTable.orderId
-    var productId by Product referencedOn OrderItemsTable.productId
-    var quantity by OrderItemsTable.quantity
-    var price by OrderItemsTable.price
-}
-
-object OrderTable: IntIdTable() {
-    val employeeId = reference("employee_id", EmployeeTable, onDelete = ReferenceOption.CASCADE)
-    val supplierId = reference("product_id", SupplierTable, onDelete = ReferenceOption.CASCADE)
-    val orderDate = datetime("order_date").clientDefault { LocalDateTime.now() }
+object PurchaseOrders : CustomStringTable("purchase_orders") {
+    val employee = reference("employee_id", EmployeeTable, onDelete = ReferenceOption.CASCADE)
+    val supplier = reference("supplier_id", SupplierTable, onDelete = ReferenceOption.CASCADE)
+    val expectedDate = date("expected_date").clientDefault { LocalDate.now() }
     val totalAmount = decimal("total_amount", 10, 2)
-    val orderStatus = varchar("order_status", 50).clientDefault { "PENDING" }
+    val orderStatus = customEnumeration(
+        "order_status",
+        "order_status",
+        { value -> OrderStatus.valueOf(value as String) },
+        { PGEnum("order_status", it) }
+    ).default(OrderStatus.PENDING)
 }
 
-class Order(id: EntityID<Int>): IntEntity(id) {
-    companion object: IntEntityClass<Order>(OrderTable)
+object PurchaseOrderItems : CustomStringTable("purchase_order_items") {
+    val order = reference("order", PurchaseOrders, onDelete = ReferenceOption.CASCADE)
+    val product = reference("product_id", ProductTable, onDelete = ReferenceOption.CASCADE)
+    val quantity = integer("quantity")
+    val unitPrice = decimal("price", 10, 2)
+    val subtotal = decimal("sub_total", 10, 2)
+}
 
-    var employeeId by Employee referencedOn OrderTable.employeeId
-    var supplierId by Supplier referencedOn OrderTable.supplierId
-    var orderDate by OrderTable.orderDate
-    var totalAmount by OrderTable.totalAmount
-    val orderItems by OrderItem referrersOn OrderItemsTable.orderId
-    var orderStatus by OrderTable.orderStatus
+class PurchaseOrder(id: EntityID<String>) : CustomStringEntity(id, PurchaseOrders) {
+    companion object : CustomStringEntityClass<PurchaseOrder>(PurchaseOrders)
+
+    var employee by Employee referencedOn PurchaseOrders.employee
+    var supplier by Supplier referencedOn PurchaseOrders.supplier
+    var expectedDate by PurchaseOrders.expectedDate
+    var totalAmount by PurchaseOrders.totalAmount
+    var orderStatus by PurchaseOrders.orderStatus
+
+    val purchaseOrderItems by PurchaseOrderItem referrersOn PurchaseOrderItems.order
+
+    fun toOrderResponse() = PurchaseOrderResponse(
+        purchaseOrderId = id.value,
+        employee = employee.fullName,
+        supplier = supplier.fullName,
+        expectedDate = expectedDate,
+        purchaseOrderItems = purchaseOrderItems.map { it.toPurchaseOrderItemResponse() }.toMutableList(),
+        totalAmount = this.totalAmount,
+        orderStatus = orderStatus,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
+}
+
+class PurchaseOrderItem(id: EntityID<String>) : CustomStringEntity(id, PurchaseOrderItems) {
+
+    companion object : CustomStringEntityClass<PurchaseOrderItem>(PurchaseOrderItems)
+
+    var order by PurchaseOrder referencedOn PurchaseOrderItems.order
+    var product by Product referencedOn PurchaseOrderItems.product
+    var quantity by PurchaseOrderItems.quantity
+    var unitPrice by PurchaseOrderItems.unitPrice
+    var subtotal by PurchaseOrderItems.subtotal
+
+    fun toPurchaseOrderItemResponse() = PurchaseOrderItemResponse(
+        purchaseOrderItemId = id.value,
+        product = product.toProductResponse().name,
+        quantity = quantity,
+        unitPrice = unitPrice,
+        subtotal = subtotal,
+    )
 }

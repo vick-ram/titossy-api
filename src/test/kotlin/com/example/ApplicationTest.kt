@@ -1,3 +1,13 @@
 package com.example
 
-class ApplicationTest
+import io.ktor.server.testing.*
+import org.junit.Test
+
+class ApplicationTest {
+    @Test
+    fun testCustomer() = testApplication {
+        application {
+            module()
+        }
+    }
+}

@@ -3,42 +3,23 @@ package com.example.commands.queries.employee
 import com.example.auth.Config.AUDIENCE
 import com.example.auth.Config.ISSUER
 import com.example.auth.Config.SECRET
+import com.example.auth.JwtPayload
 import com.example.auth.TokenBlackList
 import com.example.auth.generateEmployeeTokens
-import com.example.auth.generateTokens
+import com.example.commands.customMatch
 import com.example.db.employee.Employee
 import com.example.db.employee.EmployeeTable
 import com.example.db.util.DatabaseUtil.dbQuery
-import com.example.exceptions.PasswordDidNotMatch
-import com.example.exceptions.UserDoesNotExist
-import com.example.models.employee.EmployeeRequest
-import com.example.models.employee.EmployeeResponse
-import com.example.models.employee.EmployeeUpdate
-import com.example.models.employee.Roles
+import com.example.exceptions.*
+import com.example.models.employee.*
+import com.example.models.util.ApprovalStatus
+import com.example.models.util.comparePassword
 import com.example.models.util.hashedPassword
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import io.ktor.server.plugins.*
+import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.util.*
-
-private fun Employee.toEmployeeResponse() = EmployeeResponse(
-    id = this.id.value,
-    username = this.username,
-    firstName = this.firstName,
-    lastName = this.lastName,
-    gender = this.gender,
-    email = this.email,
-    password = this.password,
-    phone = this.phone,
-    role = this.role,
-    availability = this.availability,
-    createdAt = Date.from(this.createdAt.atZone(ZoneId.systemDefault()).toInstant()),
-    updatedAt = Date.from(this.updatedAt.atZone(ZoneId.systemDefault()).toInstant())
-)
+import javax.security.auth.login.FailedLoginException
 
 suspend fun createEmployee(employeeRequest: EmployeeRequest) = dbQuery {
     val existingEmployee =
@@ -47,106 +28,147 @@ suspend fun createEmployee(employeeRequest: EmployeeRequest) = dbQuery {
             .singleOrNull()
 
     if (existingEmployee != null) {
-        return@dbQuery null
+        throw AlreadyExistsException("Employee already exists")
     } else {
         val employeeResponse = Employee.new {
             username = employeeRequest.username
-            firstName = employeeRequest.firstName
-            lastName = employeeRequest.lastName
-            gender = employeeRequest.gender
-            email = employeeRequest.email
-            password = hashedPassword(employeeRequest.password)
-            phone = employeeRequest.phone
-            role = employeeRequest.role
-            availability = employeeRequest.availability
-            createdAt = LocalDateTime.now()
-            updatedAt = LocalDateTime.now()
+            fullName = "${employeeRequest.firstName} ${employeeRequest.lastName}"
+            this.gender = employeeRequest.gender
+            this.email = employeeRequest.email
+            this.password = hashedPassword(employeeRequest.password)
+            this.phone = employeeRequest.phone
+            this.role = employeeRequest.role
+            this.availability = Availability.AVAILABLE
+            this.approvalStatus = ApprovalStatus.APPROVED
+            this.createdAt = LocalDateTime.now()
+            this.updatedAt = LocalDateTime.now()
+            this.tsv =
+                "to_tsvector('english, ${this.username} ${this.fullName} ${this.email} ${this.role}')"
         }.toEmployeeResponse()
         return@dbQuery employeeResponse
     }
 }
 
-suspend fun signInEmployee(email: String, password: String): String? = dbQuery {
+suspend fun signInEmployee(employeeCredentials: EmployeeCredentials): String = dbQuery {
     return@dbQuery try {
-        Employee.find { EmployeeTable.email eq email }
-            .singleOrNull()
-            ?.takeIf { it.password == hashedPassword(password) }
-            ?.let { generateEmployeeTokens(it.email, SECRET, ISSUER, AUDIENCE, it.role.name) }
+
+        val employee = when {
+            employeeCredentials.email != null -> Employee.find { EmployeeTable.email eq employeeCredentials.email }
+            employeeCredentials.username != null -> Employee.find { EmployeeTable.username eq employeeCredentials.username }
+            else -> null
+        }?.singleOrNull()
+
+        if (employee != null && !comparePassword(employeeCredentials.password, employee.password)) {
+            throw InvalidCredentials("Invalid credentials")
+        }
+
+        employee?.let { empl ->
+            generateEmployeeTokens(
+                JwtPayload(
+                    sub = empl.id.toString(),
+                    email = empl.email,
+                    username = empl.username,
+                    role = empl.role.name,
+                    exp = Date(System.currentTimeMillis() + 31_536_000_000),
+                    iss = ISSUER,
+                    secret = SECRET,
+                    audience = AUDIENCE
+                )
+            )
+        } ?: throw NotFoundException("User not found")
     } catch (e: Exception) {
-        throw UserDoesNotExist("User does not exist")
+        when (e) {
+            is NotFoundException -> throw e
+            is InvalidCredentials -> throw e
+            else -> throw FailedLoginException("Failed to login employee, try again")
+        }
     }
 }
 
 suspend fun signOutEmployee(token: String) = dbQuery {
-    TokenBlackList.blacklistToken(token)
-}
-
-suspend fun getEmployeeById(id: Int): EmployeeResponse? = dbQuery {
-    return@dbQuery try {
-        Employee.find { EmployeeTable.id eq id }
-            .singleOrNull()
-            ?.toEmployeeResponse()
+    try {
+        TokenBlackList.blacklistToken(token)
     } catch (e: Exception) {
-        throw UserDoesNotExist("User does not exist")
-    }
-}
-
-suspend fun getEmployeeByEmail(email: String): EmployeeResponse? = dbQuery {
-    return@dbQuery try {
-        Employee.find { EmployeeTable.email eq email }
-            .singleOrNull()?.toEmployeeResponse()
-    } catch (e: Exception) {
-        throw UserDoesNotExist("User does not exist")
-    }
-}
-
-suspend fun getEmployeeByRole(role: Roles): EmployeeResponse? = dbQuery {
-    return@dbQuery try {
-        Employee.find { EmployeeTable.role eq role }
-            .singleOrNull()
-            ?.toEmployeeResponse()
-    } catch (e: Exception) {
-        throw UserDoesNotExist("No employee with role $role found")
-    }
-}
-
-suspend fun getAllEmployees(): List<EmployeeResponse> = dbQuery {
-    return@dbQuery try {
-        Employee.all()
-            .map { it.toEmployeeResponse() }
-    } catch (e: Exception) {
-        throw UserDoesNotExist("No employees found")
-    }
-}
-
-suspend fun updateEmployee(id: Int, employeeUpdateRequest: EmployeeUpdate) = dbQuery {
-    return@dbQuery try {
-        val employee = Employee.findById(id)
-        employee?.apply {
-            this.username = employeeUpdateRequest.username
-            this.firstName = employeeUpdateRequest.firstName
-            this.lastName = employeeUpdateRequest.lastName
-            this.gender = employeeUpdateRequest.gender
-            this.email = employeeUpdateRequest.email
-            this.password = hashedPassword(employeeUpdateRequest.password)
-            this.phone = employeeUpdateRequest.phone
-            this.role = employeeUpdateRequest.role
-            this.availability = employeeUpdateRequest.availability
-            this.updatedAt = LocalDateTime.now()
+        when (e) {
+            is InvalidToken -> throw e
+            is TokenAlreadyBlacklisted -> throw e
+            else -> throw UnexpectedError("An unexpected error occurred during sign out")
         }
-    }catch (e: Exception){
-        return@dbQuery null
     }
 }
 
-suspend fun deleteEmployee(id: Int): Boolean = dbQuery {
+suspend fun updateEmployeeAvailability(id: UUID, availability: UpdateEmployeeAvailability): EmployeeResponse = dbQuery {
     return@dbQuery try {
-        Employee.findById(id)
-            ?.delete()
+        Employee.findByIdAndUpdate(id) {
+            it.availability = availability.availability
+            it.updatedAt = LocalDateTime.now()
+        }?.toEmployeeResponse().takeIf { it?.role == Roles.CLEANER }
+            ?: throw IllegalArgumentException("Availability is required for cleaner role")
+    } catch (e: Exception) {
+        when (e) {
+            is IllegalArgumentException -> throw e
+            else -> throw FailedToCreate("Failed to update employee availability")
+        }
+    }
+}
+
+suspend fun updateEmployee(id: UUID, employeeUpdateRequest: EmployeeRequest) = dbQuery {
+    return@dbQuery try {
+        Employee.findByIdAndUpdate(id) { empl ->
+            empl.username = employeeUpdateRequest.username
+            empl.fullName = "${employeeUpdateRequest.firstName} ${employeeUpdateRequest.lastName}"
+            empl.gender = employeeUpdateRequest.gender
+            empl.email = employeeUpdateRequest.email
+            empl.password = hashedPassword(employeeUpdateRequest.password)
+            empl.phone = employeeUpdateRequest.phone
+            empl.role = employeeUpdateRequest.role
+            empl.availability = employeeUpdateRequest.availability
+            empl.updatedAt = LocalDateTime.now()
+        }
+    } catch (e: Exception) {
+        when (e) {
+            is FailedToCreate -> throw FailedToCreate("Failed to update employee")
+            else -> throw e
+        }
+    }
+}
+
+suspend fun deleteEmployee(id: UUID): Boolean = dbQuery {
+    return@dbQuery try {
+        val employeeToDelete = Employee.findById(id) ?: throw NotFoundException("No id with $id")
+        employeeToDelete.delete()
         true
     } catch (e: Exception) {
-        return@dbQuery false
+        throw IllegalArgumentException("Failed to delete the employee with $id")
     }
 }
 
+/**
+ * Filtered employees
+ */
+suspend fun filteredEmployees(filter: (Employee) -> Boolean): List<EmployeeResponse>? = dbQuery {
+    return@dbQuery try {
+        Employee.all()
+            .sortedByDescending { it.createdAt.coerceAtLeast(it.updatedAt) }
+            .filter { filter(it) && (it.role != Roles.ADMIN) }
+            .map { it.toEmployeeResponse() }
+            .toList()
+    } catch (e: Exception) {
+        null
+    }
+}
+
+/**
+ * Search employee
+ */
+suspend fun searchEmployee(query: String): List<EmployeeResponse>? = dbQuery {
+    return@dbQuery try {
+        EmployeeTable.selectAll()
+            .where { EmployeeTable.tsv.customMatch(query) }
+            .map { Employee.wrapRow(it).toEmployeeResponse() }
+            .toList()
+    } catch (e: Exception) {
+        null
+    }
+}
 

@@ -1,5 +1,4 @@
 package com.example.commands
-
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.QueryBuilder
@@ -9,6 +8,18 @@ fun Column<String>.customMatch(pattern: String): Op<Boolean> =
     object : Op<Boolean>() {
         override fun toQueryBuilder(queryBuilder: QueryBuilder) =
             queryBuilder {
-                append("to_tsquery(", this@customMatch, ", ", pattern, ")")
+                append(this@customMatch, " @@ to_tsquery('", pattern, ":*')")
             }
     }
+
+
+
+
+
+
+
+
+
+
+
+

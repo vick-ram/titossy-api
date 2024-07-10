@@ -3,209 +3,164 @@ package com.example.commands.queries.customer
 import com.example.auth.Config.AUDIENCE
 import com.example.auth.Config.ISSUER
 import com.example.auth.Config.SECRET
+import com.example.auth.JwtPayload
 import com.example.auth.TokenBlackList
-import com.example.auth.TokenBlackList.isTokenBlacklisted
 import com.example.auth.generateTokens
-import com.example.db.customer.CustomerAddress
+import com.example.commands.customMatch
 import com.example.db.customer.Customer
-import com.example.db.customer.CustomerAddressTable
 import com.example.db.customer.CustomerTable
 import com.example.db.util.DatabaseUtil.dbQuery
-import com.example.exceptions.AlreadyExistsException
-import com.example.exceptions.PasswordDidNotMatch
-import com.example.exceptions.UserDoesNotExist
-import com.example.models.customer.*
-import com.example.models.customer.address.CustomerAddressResponse
+import com.example.exceptions.*
+import com.example.models.customer.CustomerRequest
+import com.example.models.customer.CustomerResponse
+import com.example.models.customer.CustomerSignInData
+import com.example.models.customer.StatusUpdate
 import com.example.models.util.ApprovalStatus
 import com.example.models.util.comparePassword
 import com.example.models.util.hashedPassword
-import org.jetbrains.exposed.sql.*
+import io.ktor.server.plugins.*
+import org.jetbrains.exposed.exceptions.ExposedSQLException
+import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.util.*
 
-private fun CustomerAddress.toAddressResponse() = CustomerAddressResponse(
-    id = this.id.value,
-    street = this.street,
-    city = this.city,
-    state = this.state,
-    zip = this.zip
-)
-
-private fun Customer.toCustomerResponse() = CustomerResponse(
-    id = this.id.value,
-    username = this.username,
-    firstName = this.firstName,
-    lastName = this.lastName,
-    phone = this.phone,
-    address = this.address.toAddressResponse(),
-    gender = this.gender,
-    email = this.email,
-    password = this.password,
-    status = this.status,
-    createdAt = Date.from(this.createdAt.atZone(ZoneId.systemDefault()).toInstant()),
-    updatedAt = Date.from(this.updatedAt.atZone(ZoneId.systemDefault()).toInstant())
-)
-
-suspend fun insertCustomer(customerRequest: CustomerRequest): CustomerResponse = dbQuery {
+suspend fun createCustomer(customerRequest: CustomerRequest): CustomerResponse = dbQuery {
     val existingCustomer = CustomerTable
-        .selectAll().where { CustomerTable.email eq customerRequest.email }
-        .singleOrNull()
-    if (existingCustomer != null) {
+        .selectAll().where { CustomerTable.email eq customerRequest.email }.count() > 0
+    if (existingCustomer) {
         throw AlreadyExistsException("Customer already exists")
-    } else {
-        val address = CustomerAddress.new {
-            this.street = customerRequest.address.street
-            this.city = customerRequest.address.city
-            this.state = customerRequest.address.state
-            this.zip = customerRequest.address.zip
-        }
-        return@dbQuery Customer.new {
-            this.username = customerRequest.username
-            this.firstName = customerRequest.firstName
-            this.lastName = customerRequest.lastName
-            this.phone = customerRequest.phone
-            this.address = CustomerAddress(address.id)
-            this.gender = customerRequest.gender
-            this.email = customerRequest.email
-            this.password = hashedPassword(customerRequest.password)
-            this.status = ApprovalStatus.PENDING
-            this.createdAt = LocalDateTime.now()
-            this.updatedAt = LocalDateTime.now()
-        }.toCustomerResponse()
     }
+    return@dbQuery Customer.new {
+        this.username = customerRequest.username
+        this.fullName = "${customerRequest.firstName} ${customerRequest.lastName}"
+        this.phone = customerRequest.phone
+        this.email = customerRequest.email
+        this.password = hashedPassword(customerRequest.password)
+        this.status = ApprovalStatus.PENDING
+        this.createdAt = LocalDateTime.now()
+        this.updatedAt = LocalDateTime.now()
+        this.tsv = "to_tsvector('english', '${this.username} ${this.fullName} ${this.email}')"
+    }.toCustomerResponse()
 }
 
-suspend fun signInCustomer(email: String, password: String): String? = dbQuery {
+suspend fun signInCustomer(customerSignInData: CustomerSignInData): String = dbQuery {
     return@dbQuery try {
-        Customer.find { CustomerTable.email eq email }
-            .singleOrNull()
-            ?.takeIf { comparePassword(password, it.password) }
-            ?.let { generateTokens(it.email, SECRET, ISSUER, AUDIENCE) }
-    } catch (e: Exception) {
-        when {
-            comparePassword(password, hashedPassword(password)) -> {
-                throw PasswordDidNotMatch("The Wrong password")
-            }
 
-            else -> {
-                throw UserDoesNotExist("No match of customer")
-            }
+        val customer = when {
+            customerSignInData.email != null -> Customer.find { CustomerTable.email eq customerSignInData.email }
+            customerSignInData.username != null -> Customer.find { CustomerTable.username eq customerSignInData.username }
+            else -> null
+        }?.singleOrNull()
+
+        if (customer != null && !comparePassword(customerSignInData.password, customer.password)) {
+            throw InvalidCredentials("Wrong password provided for ${customer.email ?: customer.username}")
         }
-    }
-}
 
-suspend fun getCustomerByUsername(username: String): CustomerResponse? = dbQuery {
-    return@dbQuery try {
-        Customer.find { CustomerTable.username eq username }
-            .singleOrNull()
-            ?.toCustomerResponse()
+        customer?.let { cust ->
+            generateTokens(
+                JwtPayload(
+                    sub = cust.id.toString(),
+                    email = cust.email,
+                    username = cust.username,
+                    exp = Date(System.currentTimeMillis() + 31_536_000_000),
+                    iss = ISSUER,
+                    secret = SECRET,
+                    audience = AUDIENCE
+                )
+            )
+        } ?: throw NotFoundException("User with ${customerSignInData.email ?: customerSignInData.username} not found")
     } catch (e: Exception) {
-        throw UserDoesNotExist("No such customer")
+        when (e) {
+            is NotFoundException -> throw e
+            is InvalidCredentials -> throw e
+            else -> throw UnexpectedError("An unexpected error occurred")
+        }
     }
 }
 
 suspend fun signOutCustomer(token: String) = dbQuery {
-    if (isTokenBlacklisted(token)) {
-        throw UserDoesNotExist("Already logged out")
-    } else {
+    try {
         TokenBlackList.blacklistToken(token)
-    }
-}
-
-suspend fun getCustomerByStatus(email: String): CustomerResponse? = dbQuery {
-    val customerRoleExists = CustomerTable
-        .selectAll().where { CustomerTable.email eq email }.count() > 0
-    val customerStatus = if (customerRoleExists) {
-        Customer.find { CustomerTable.email eq email }
-            .singleOrNull()
-            ?.toCustomerResponse()
-    } else {
-        throw UserDoesNotExist("No such customer")
-    }
-    return@dbQuery customerStatus
-}
-
-suspend fun getCustomerByEmail(email: String): CustomerResponse? = dbQuery {
-    return@dbQuery try {
-        Customer.find { CustomerTable.email eq email }
-            .singleOrNull()
-            ?.toCustomerResponse()
     } catch (e: Exception) {
-        null
+        when (e) {
+            is InvalidToken -> throw e
+            is TokenAlreadyBlacklisted -> throw e
+            else -> throw UnexpectedError("An unexpected error occurred during sign out")
+        }
     }
 }
 
-suspend fun getCustomerById(id: Int): CustomerResponse? = dbQuery {
+suspend fun updateCustomerStatus(id: UUID, statusUpdate: StatusUpdate): CustomerResponse = dbQuery {
     return@dbQuery try {
-        Customer.findById(id)
-            ?.toCustomerResponse()
+        Customer.findByIdAndUpdate(id) {
+            it.status = statusUpdate.status
+            it.updatedAt = LocalDateTime.now()
+        }?.toCustomerResponse()
+            ?: throw NotFoundException("Could not find customer with $id id")
     } catch (e: Exception) {
-        null
+        throw FailedToCreate("Failed to update customer status to ${statusUpdate.status}")
     }
 }
 
-suspend fun updateCustomerStatus(id: Int, status: ApprovalStatus) = dbQuery {
+suspend fun updateCustomer(id: UUID, customerUpdateRequest: CustomerRequest): CustomerResponse = dbQuery {
     return@dbQuery try {
-        Customer.findById(id)
-            ?.let {
-                it.status = status
-                it.updatedAt = LocalDateTime.now()
-            }
+        Customer.findByIdAndUpdate(id) { customerUpdate ->
+            customerUpdate.username = customerUpdateRequest.username
+            customerUpdate.fullName = "${customerUpdateRequest.firstName} ${customerUpdateRequest.lastName}"
+            customerUpdate.phone = customerUpdateRequest.phone
+            customerUpdate.email = customerUpdateRequest.email
+            customerUpdate.password = hashedPassword(customerUpdateRequest.password)
+            customerUpdate.updatedAt = LocalDateTime.now()
+        }?.toCustomerResponse()
+            ?: throw NotFoundException("No customer with $id id")
     } catch (e: Exception) {
-        null
-    }
-}
-
-suspend fun updateAllCustomerStatus(status: ApprovalStatus) = dbQuery {
-    return@dbQuery try {
-        Customer.all()
-            .forEach {
-                it.status = status
-                it.updatedAt = LocalDateTime.now()
-            }
-    } catch (e: Exception) {
-        null
-    }
-}
-
-suspend fun getAllCustomers(): List<CustomerResponse> = dbQuery {
-    return@dbQuery try {
-        Customer.all()
-            .map { it.toCustomerResponse() }
-            .sortedByDescending { it.updatedAt }
-    } catch (e: Exception) {
-        throw UserDoesNotExist("No customers found")
-    }
-}
-
-suspend fun updateCustomer(id: Int, customerUpdateRequest: CustomerUpdate): CustomerResponse? = dbQuery {
-    return@dbQuery try {
-        Customer.findById(id)
-            ?.let {
-                it.username = customerUpdateRequest.username
-                it.firstName = customerUpdateRequest.firstName
-                it.lastName = customerUpdateRequest.lastName
-                it.phone = customerUpdateRequest.phone
-                it.address = CustomerAddress[customerUpdateRequest.address]
-                it.gender = customerUpdateRequest.gender
-                it.email = customerUpdateRequest.email
-                it.password = hashedPassword(customerUpdateRequest.password)
-                it.updatedAt = LocalDateTime.now()
-                it.toCustomerResponse()
-            }
-    } catch (e: Exception) {
-        null
+        when (e) {
+            is ExposedSQLException -> throw e
+            is FailedToCreate -> throw FailedToCreate("Failed to update customer with $id id details")
+            else -> throw e
+        }
     }
 
 }
 
-suspend fun deleteCustomer(id: Int): Boolean = dbQuery {
+suspend fun deleteCustomer(id: UUID): Boolean = dbQuery {
     return@dbQuery try {
         Customer.findById(id)
             ?.delete()
+            ?: throw NotFoundException("No customer with $id")
         true
     } catch (e: Exception) {
-        false
+        when (e) {
+            is ExposedSQLException -> throw e
+            is DeleteException -> throw DeleteException("Could not delete the customer, failed")
+            else -> throw e
+        }
     }
 }
+
+
+suspend fun filteredCustomers(filter: (Customer) -> Boolean): List<CustomerResponse>? = dbQuery {
+    return@dbQuery try {
+        Customer.all()
+            .limit(50)
+            .filter(filter)
+            .sortedByDescending { it.createdAt.coerceAtLeast(it.updatedAt) }
+            .map { it.toCustomerResponse() }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+suspend fun searchCustomer(query: String): List<CustomerResponse>? = dbQuery {
+    return@dbQuery try {
+        CustomerTable
+            .selectAll().where { CustomerTable.tsv.customMatch(query) }
+            .map { Customer.wrapRow(it).toCustomerResponse() }
+            .toList()
+    } catch (e: Exception) {
+        println("Error while searching for customers: ${e.message}")
+        null
+    }
+}
+
+

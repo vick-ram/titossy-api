@@ -7,15 +7,15 @@ import org.valiktor.validate
 
 @Serializable
 data class FeedbackRequest(
-    val customerId: Int,
-    val bookingId: Int,
+    val bookingId: String,
     val feedback: String,
     val rating: Double
 ){
-    init{
+    fun validate(): FeedbackRequest {
         validate(this){
             validate(FeedbackRequest::feedback).hasSize(min = 5, max = 500)
             validate(FeedbackRequest::rating).isBetween(0.0, 5.0)
         }
+        return this
     }
 }

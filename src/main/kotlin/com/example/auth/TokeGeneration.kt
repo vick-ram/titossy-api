@@ -4,22 +4,36 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import java.util.*
 
-fun generateTokens(email: String, secret: String, issuer: String, audience: String): String {
+data class JwtPayload(
+    val sub: String,
+    val email: String,
+    val username: String? = null,
+    val role: String? = null,
+    val exp: Date,
+    val iss: String,
+    val secret: String,
+    val audience: String
+)
+
+fun generateTokens(payload: JwtPayload): String {
     return JWT.create()
-        .withAudience(audience)
-        .withIssuer(issuer)
-        .withClaim("email", email)
-        .withExpiresAt(Date(System.currentTimeMillis() + 31_536_000_000))
-        .sign(Algorithm.HMAC256(secret))
+        .withSubject(payload.sub)
+        .withAudience(payload.audience)
+        .withIssuer(payload.iss)
+        .withClaim("email", payload.email)
+        .withClaim("username", payload.username)
+        .withExpiresAt(payload.exp)
+        .sign(Algorithm.HMAC256(payload.secret))
 }
 
-//generate tokens for employee with roles
-fun generateEmployeeTokens(email: String, secret: String, issuer: String, audience: String, role: String): String {
+fun generateEmployeeTokens(payload: JwtPayload): String {
     return JWT.create()
-        .withAudience(audience)
-        .withIssuer(issuer)
-        .withClaim("email", email)
-        .withClaim("role", role)
-        .withExpiresAt(Date(System.currentTimeMillis() + 31_536_000_000))
-        .sign(Algorithm.HMAC256(secret))
+        .withSubject(payload.sub)
+        .withAudience(payload.audience)
+        .withIssuer(payload.iss)
+        .withClaim("email", payload.email)
+        .withClaim("username", payload.username)
+        .withClaim("role", payload.role)
+        .withExpiresAt(payload.exp)
+        .sign(Algorithm.HMAC256(payload.secret))
 }

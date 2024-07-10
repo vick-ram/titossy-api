@@ -1,80 +1,238 @@
 package com.example.routing.supplier
 
 import com.example.commands.queries.supplier.*
-import com.example.models.supplier.SupplierUpdate
+import com.example.exceptions.ApiResponse
+import com.example.exceptions.InvalidCredentials
+import com.example.exceptions.UnexpectedError
+import com.example.models.supplier.SupplierRequest
+import com.example.models.supplier.SupplierSignInData
+import com.example.models.supplier.SupplierStatusUpdate
 import com.example.models.util.ApprovalStatus
+import com.example.routing.util.Supplier
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.request.*
+import io.ktor.server.auth.*
+import io.ktor.server.plugins.*
+import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.supplierRoutes(){
-    route("/supplier") {
-        get {
-            val suppliers = getAllSuppliers()
-            try {
-                call.respond(HttpStatusCode.OK,suppliers)
-            }catch (e: Exception){
-                call.respond(HttpStatusCode.NotFound,"${e.message}")
+fun Route.supplierRoutes() {
+    post<Supplier.Auth.SignUp, SupplierRequest> { _, supplierReq ->
+        val supplier = supplierReq.validate()
+        try {
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.Created,
+                    createSupplier(supplier),
+                    "Account created successfully"
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                ApiResponse.error(
+                    HttpStatusCode.Unauthorized,
+                    e.message
+                )
+            )
+        }
+    }
+
+    post<Supplier.Auth.SignIn, SupplierSignInData> { _, cred ->
+        val supplier = cred.validate()
+        try {
+            val tokens = signInSupplier(supplier)
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    tokens,
+                    "Signed in successfully"
+                )
+            )
+        } catch (e: Exception) {
+            when (e) {
+                is NotFoundException -> call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.NotFound,
+                        e.message
+                    )
+                )
+
+                is InvalidCredentials -> call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.BadRequest,
+                        e.message
+                    )
+                )
+
+                is UnexpectedError -> call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.InternalServerError,
+                        e.message
+                    )
+                )
             }
         }
-        get("/{id}") {
-            val id = call.parameters["id"]?.toInt() ?: 0
-            val supplier = getSupplierById(id)
+    }
+
+    authenticate("auth-jwt") {
+        post("/api/supplier/auth/sign_out") {
+            val token = call.request.headers["Authorization"].toString()
             try {
-                supplier?.let {
-                    call.respond(HttpStatusCode.OK, it)
-                } ?: run {
-                    call.respond(HttpStatusCode.NotFound, "Supplier not found")
-                }
+                signOutSupplier(token)
+                call.respond(
+                    ApiResponse.success(
+                        HttpStatusCode.NoContent,
+                        null,
+                        "Signed out successfully"
+                    )
+                )
             } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, "${e.message}")
+                call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.InternalServerError,
+                        e.message
+                    )
+                )
             }
         }
-        patch("/{id}") {
-            val id = call.parameters["id"]?.toInt() ?: 0
-            val status = call.receive<ApprovalStatus>()
-            try {
-                val supplier = updateSupplierStatus(id, status)
-                supplier?.let {
-                    call.respond(HttpStatusCode.OK, it)
-                } ?: run {
-                    call.respond(HttpStatusCode.NotFound, "Supplier not found")
-                }
-            } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, "${e.message}")
-            }
+    }
+
+    get<Supplier> { query ->
+
+        when {
+            query.email != null -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    filteredSuppliers { it.email == query.email }?.firstOrNull(),
+                    null
+                )
+            )
+
+            query.status != null -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    filteredSuppliers { it.status == ApprovalStatus.valueOf(query.status) },
+                    null
+                )
+            )
+
+            query.search != null -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    searchSupplier(query.search),
+                    null
+                )
+            )
+
+            else -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    filteredSuppliers { true },
+                    null
+                )
+            )
         }
 
-        put("/{id}") {
-            val id = call.parameters["id"]?.toIntOrNull() ?: 0
-            val supplierUpdateRequest = call.receive<SupplierUpdate>()
-
-            val supplierToUpdate = updateSupplier(id, supplierUpdateRequest)
-            try {
-                supplierToUpdate?.let {
-                    call.respond(HttpStatusCode.OK, it)
-                } ?: run {
-                    call.respond(HttpStatusCode.NotFound, "Supplier not found")
-                }
-            } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, "${e.message}")
-            }
+    }
+    get<Supplier.Id> { param ->
+        try {
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    filteredSuppliers { it.id.value == param.id },
+                    null
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                ApiResponse.error(
+                    HttpStatusCode.InternalServerError,
+                    e.message
+                )
+            )
         }
+    }
 
-        delete("/{id}"){
-            val id = call.parameters["id"]?.toInt() ?: 0
-            try {
-                val supplier = deleteSupplier(id)
-                if(supplier){
-                    call.respond(HttpStatusCode.OK,"Supplier deleted successfully")
-                }else{
-                    call.respond(HttpStatusCode.NotFound,"Supplier not found")
-                }
-            }catch (e: Exception){
-                call.respond(HttpStatusCode.InternalServerError,"${e.message}")
-            }
+    patch<Supplier.Id, SupplierStatusUpdate> { param, statusUpdate ->
+        try {
+            updateSupplierStatus(param.id, statusUpdate)
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    null,
+                    "Supplier status updated successfully"
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                ApiResponse.error(
+                    HttpStatusCode.InternalServerError,
+                    e.message
+                )
+            )
+        }
+    }
+    //update all supplier statuses
+    patch<Supplier.ApproveAll, SupplierStatusUpdate> { _, statusUpdate ->
+
+        try {
+            updateAllSuppliersStatus(statusUpdate)
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    null,
+                    "All suppliers approved successfully"
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                ApiResponse.error(
+                    HttpStatusCode.InternalServerError,
+                    e.message
+                )
+            )
+        }
+    }
+
+    put<Supplier.Id, SupplierRequest> { param, supplierUpdate ->
+        val supplierUpdateRequest = supplierUpdate.validate()
+        try {
+            updateSupplier(param.id, supplierUpdateRequest)
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    null,
+                    "Supplier updated successfully"
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                ApiResponse.error(
+                    HttpStatusCode.InternalServerError,
+                    e.message
+                )
+            )
+        }
+    }
+
+    delete<Supplier.Id> { param ->
+        try {
+            deleteSupplier(param.id)
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.NoContent,
+                    null,
+                    "Supplier deleted successfully"
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                ApiResponse.error(
+                    HttpStatusCode.InternalServerError,
+                    e.message
+                )
+            )
         }
     }
 }

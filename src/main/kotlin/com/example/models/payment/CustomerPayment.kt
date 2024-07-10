@@ -1,41 +1,57 @@
 package com.example.models.payment
 
-import com.example.models.util.DateSerializer
+import com.example.exceptions.isPhoneNumber
+import com.example.exceptions.withMessage
+import com.example.models.booking.BookingResponse
+import com.example.models.util.BigDecimalSerializer
+import com.example.models.util.LocalDateTimeSerializer
+import com.example.models.util.UUIDSerializer
+import io.ktor.util.reflect.*
 import kotlinx.serialization.Serializable
-import org.valiktor.functions.hasSize
-import org.valiktor.functions.isEqualToIgnoringCase
-import org.valiktor.functions.isNotBlank
-import org.valiktor.functions.isPositive
+import org.valiktor.functions.*
 import org.valiktor.validate
-import java.util.Date
+import java.math.BigDecimal
+import java.time.LocalDateTime
+import java.util.*
 
 @Serializable
 data class CustomerPaymentRequest(
-    val bookingId: Int,
-    val amount: Double,
-    val method: String,
-    val refNumber: String?
+    val bookingId: String,
+    val phoneNumber: String,
+    val transactionCode: String
 ) {
-    init {
+    fun validate(): CustomerPaymentRequest {
         validate(this) {
-            validate(CustomerPaymentRequest::amount).isPositive()
-            validate(CustomerPaymentRequest::method).isNotBlank()
-            refNumber?.let { it1 ->
-                validate(CustomerPaymentRequest::refNumber).hasSize(10).isEqualToIgnoringCase(it1.uppercase())
-            }
+            validate(CustomerPaymentRequest::transactionCode)
+                .isNotEmpty().withMessage("Transaction code cannot be empty")
+                .hasSize(10).withMessage("Transaction code must be 10 characters long")
+                .matches(Regex("[A-Z0-9]+"))
+                .withMessage("Transaction code must contain only uppercase letters and digits")
+                .matches(Regex(".*\\d.*")).withMessage("Transaction code must contain at least one digit")
+            validate(CustomerPaymentRequest::phoneNumber)
+                .isPhoneNumber()
         }
-
+        return this
     }
 }
 
 @Serializable
 data class CustomerPaymentResponse(
-    val id: Int,
-    val bookingId: Int,
-    @Serializable(with = DateSerializer::class)
-    val date: Date,
-    val amount: Double,
-    val method: String,
-    val refNumber: String?,
-    val status: PaymentStatus
+    @Serializable(with = UUIDSerializer::class)
+    val paymentId: UUID,
+    val bookingId: String,
+    @Serializable(with = BigDecimalSerializer::class)
+    val amount: BigDecimal,
+    val paymentMethod: String?,
+    val phoneNumber: String,
+    val transactionCode: String,
+    val paymentStatus: PaymentStatus,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val createdAt: LocalDateTime,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val updatedAt: LocalDateTime,
 )
+
+enum class PaymentMethod {
+    CASH, MOBILE, CARD
+}

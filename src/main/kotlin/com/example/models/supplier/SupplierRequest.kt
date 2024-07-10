@@ -1,31 +1,29 @@
 package com.example.models.supplier
 
-import com.example.models.supplier.address.SupplierAddressRequest
+import com.example.exceptions.isPhoneNumber
+import com.example.exceptions.password
 import kotlinx.serialization.Serializable
 import org.valiktor.functions.*
 import org.valiktor.validate
 
 @Serializable
 data class SupplierRequest(
-    val username: String,
     val firstName: String,
     val lastName: String,
-    val phone: Long,
-    val address: SupplierAddressRequest,
+    val phone: String,
+    val address: String,
     val email: String,
     val password: String
 ) {
-    init {
+    fun validate(): SupplierRequest {
         validate(this) {
-            validate(SupplierRequest::username).isNotBlank()
             validate(SupplierRequest::firstName).isNotBlank()
             validate(SupplierRequest::lastName).isNotBlank()
-            validate(SupplierRequest::phone).isPositive()
+            validate(SupplierRequest::phone).isPhoneNumber()
+            validate(SupplierRequest::address).isNotBlank()
             validate(SupplierRequest::email).isNotBlank().isEmail()
-            validate(SupplierRequest::password)
-                .isNotBlank()
-                .matches(Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+\$")
-            )
+            validate(SupplierRequest::password).isNotBlank().password()
         }
+        return this
     }
 }

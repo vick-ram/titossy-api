@@ -1,5 +1,6 @@
 package com.example.routing
 
+import com.example.exceptions.ApiResponse
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -7,7 +8,7 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.withRole(role: String, build: Route.() -> Unit) {
+fun Route.withRole(vararg role: String, build: Route.() -> Unit) {
     val route = createChild(object : RouteSelector() {
         override fun evaluate(context: RoutingResolveContext, segmentIndex: Int): RouteSelectorEvaluation {
             return RouteSelectorEvaluation.Transparent
@@ -21,8 +22,8 @@ fun Route.withRole(role: String, build: Route.() -> Unit) {
 
 class RoleBasedConfiguration {
     val requiredRoles = mutableSetOf<String>()
-    fun roles(roles: Set<String>) {
-        requiredRoles.addAll(roles)
+    fun roles(roles: Set<Array<out String>>) {
+        roles.forEach { requiredRoles.addAll(it) }
     }
 }
 
@@ -37,8 +38,11 @@ val RoleAuthorizationPlugin = createRouteScopedPlugin(
         if (pluginConfig.requiredRoles.isNotEmpty() && !pluginConfig.requiredRoles.contains(role)
         ) {
             call.respond(
-                HttpStatusCode.Unauthorized,
-                "Your role validation did not match, consider signing in as a customer"
+                ApiResponse.error(
+                    HttpStatusCode.Unauthorized,
+                    "You do not have necessary permissions to access this resource. Please check your role and try again."
+
+                )
             )
         }
     }

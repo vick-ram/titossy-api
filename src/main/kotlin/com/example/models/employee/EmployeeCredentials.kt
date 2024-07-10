@@ -1,21 +1,23 @@
 package com.example.models.employee
 
+import com.example.exceptions.password
 import kotlinx.serialization.Serializable
 import org.valiktor.functions.*
 import org.valiktor.validate
 
 @Serializable
 data class EmployeeCredentials(
-    val email: String,
+    val email: String? = null,
+    val username: String? = null,
     val password: String
-){
-    init {
-        validate(this){
-            validate(EmployeeCredentials::email).isNotBlank().isEmail()
-            validate(EmployeeCredentials::password)
-                .isNotBlank()
-                .hasSize(8, 20)
-                .matches(Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+\$"))
+) {
+    fun validate(): EmployeeCredentials {
+        validate(this) {
+            validate(EmployeeCredentials::email)
+                .isEmail()
+            validate(EmployeeCredentials::username)
+            validate(EmployeeCredentials::password).password()
         }
+        return this
     }
 }

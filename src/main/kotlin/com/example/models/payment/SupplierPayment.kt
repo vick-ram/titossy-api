@@ -1,33 +1,46 @@
 package com.example.models.payment
 
-import com.example.models.util.DateSerializer
+import com.example.models.util.BigDecimalSerializer
+import com.example.models.util.LocalDateTimeSerializer
+import com.example.models.util.UUIDSerializer
 import kotlinx.serialization.Serializable
-import org.valiktor.functions.isNotBlank
-import org.valiktor.functions.isPositive
+import org.valiktor.functions.isIn
+import org.valiktor.functions.isNotNull
 import org.valiktor.validate
+import java.math.BigDecimal
+import java.time.LocalDateTime
 import java.util.*
 
 @Serializable
 data class SupplierPaymentRequest(
-    val orderId: Int,
-    val amount: Double,
-    val method: String
-){
-    init {
-        validate(this){
-            validate(SupplierPaymentRequest::amount).isPositive()
-            validate(SupplierPaymentRequest::method).isNotBlank()
+    @Serializable(with = UUIDSerializer::class)
+    val employeeId: UUID,
+    val orderId: String,
+    val method: PaymentMethod
+) {
+    fun validate(): SupplierPaymentRequest {
+        validate(this) {
+            validate(SupplierPaymentRequest::orderId).isNotNull()
+            validate(SupplierPaymentRequest::method).isIn(*PaymentMethod::class.java.enumConstants)
         }
+        return this
     }
 }
 
 @Serializable
 data class SupplierPaymentResponse(
-    val id: Int,
-    val orderId: Int,
-    @Serializable(with = DateSerializer::class)
-    val date: Date,
-    val amount: Double,
-    val method: String,
-    val status: PaymentStatus
+    @Serializable(with = UUIDSerializer::class)
+    val supplierPaymentID: UUID,
+    @Serializable(with = UUIDSerializer::class)
+    val employeeId: UUID,
+    val orderId: String,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val paymentDate: LocalDateTime,
+    @Serializable(with = BigDecimalSerializer::class)
+    val amount: BigDecimal,
+    val method: PaymentMethod,
+    val paymentReference: String,
+    val status: PaymentStatus,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val updatedAt: LocalDateTime
 )

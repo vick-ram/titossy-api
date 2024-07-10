@@ -1,25 +1,25 @@
 package com.example.db.util
 
-import com.example.db.booking.BookingItemsTable
-import com.example.db.booking.BookingTable
-import com.example.db.customer.CustomerAddressTable
+import com.example.db.booking.BookingAssignments
+import com.example.db.booking.BookingServiceAddOns
+import com.example.db.booking.Bookings
+import com.example.db.cart.ProductCarts
+import com.example.db.cart.ServiceCart
 import com.example.db.customer.CustomerTable
 import com.example.db.employee.EmployeeTable
 import com.example.db.feedback.FeedbackTable
-import com.example.db.inventory.InventoryTable
-import com.example.db.order.OrderItemsTable
-import com.example.db.order.OrderTable
+import com.example.db.order.PurchaseOrderItems
+import com.example.db.order.PurchaseOrders
 import com.example.db.payment.CustomerPaymentTable
 import com.example.db.payment.SupplierPaymentTable
 import com.example.db.product.ProductTable
-import com.example.db.service.ServiceTable
-import com.example.db.supplier.SupplierAddressTable
+import com.example.db.service.ServiceAddOns
+import com.example.db.service.Services
 import com.example.db.supplier.SupplierTable
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import kotlinx.coroutines.Dispatchers
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -27,77 +27,174 @@ object DatabaseUtil {
     fun init() {
         Database.connect(hikari())
         transaction {
-            exec(
-                stmt = """
-            DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'roles') THEN
-                CREATE TYPE roles AS ENUM ('ADMIN', 'MANAGER', 'INVENTORY', 'FINANCE', 'SUPERVISOR', 'CLEANER');
-            END IF;
-            END $$;
-        """.trimIndent()
-            )
-            exec(
-                stmt = """
-            DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM Pg_type WHERE typname = 'availability') THEN
-            CREATE TYPE availability AS ENUM ('AVAILABLE', 'UNAVAILABLE', 'ON_LEAVE');
-            END IF;
-            END $$;
-            """.trimIndent()
-            )
-            exec(
-                stmt = """
-                DO $$ BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'gender') THEN
-                CREATE TYPE gender AS ENUM ('MALE', 'FEMALE', 'OTHER', 'NOT_SPECIFIED');
-                END IF;
-                END $$;
-            """.trimIndent()
-            )
-            exec(
-                stmt = """
-                DO $$ BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'bookingstatus') THEN
-                CREATE TYPE bookingstatus AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
-                END IF;
-                END $$;
-            """.trimIndent()
-            )
-            exec(
-                stmt = """
-                DO $$ BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'approvalstatus') THEN
-                CREATE TYPE approvalstatus AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
-                END IF;
-                END $$;
-            """.trimIndent()
-            )
-            exec(
-                stmt = """
-                DO $$ BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentstatus') THEN
-                CREATE TYPE paymentstatus AS ENUM ('PENDING', 'CONFIRMED', 'REFUNDED', 'CANCELLED');
-                END IF;
-                END $$;
-            """.trimIndent()
-            )
+            addLogger(StdOutSqlLogger)
             SchemaUtils.create(
                 CustomerTable,
-                CustomerAddressTable,
                 SupplierTable,
-                SupplierAddressTable,
                 EmployeeTable,
-                ServiceTable,
-                InventoryTable,
                 ProductTable,
-                OrderTable,
-                OrderItemsTable,
-                BookingTable,
-                BookingItemsTable,
+                PurchaseOrders,
+                PurchaseOrderItems,
                 FeedbackTable,
                 CustomerPaymentTable,
-                SupplierPaymentTable
+                SupplierPaymentTable,
             )
+            SchemaUtils.create(
+                Bookings,
+                BookingAssignments,
+                Services,
+                ServiceCart,
+                ProductCarts,
+                ServiceAddOns,
+                BookingServiceAddOns
+            )
+            /**
+             * Trigger for customer for performing full text search
+             */
+            exec(
+                stmt = """
+                    UPDATE ${CustomerTable.tableName}
+                    SET tsv = to_tsvector('english', username || ' ' || full_name || ' ' || email)
+                """.trimIndent()
+            )
+            exec(
+                """
+                    DO $$ BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM pg_class c
+                        JOIN pg_namespace n on n.oid = c.relnamespace
+                        WHERE c.relname = 'customer_tsv_idx'
+                        AND n.nspname = 'public'
+                    ) THEN
+                        EXECUTE 'CREATE INDEX customer_tsv_idx ON ${CustomerTable.tableName} USING gin(tsv)';
+                    END IF;
+                    END $$;
+                """.trimIndent()
+            )
+            exec(
+                stmt = """
+                CREATE OR REPLACE FUNCTION customer_tsv_trigger() RETURNS trigger AS $$
+                BEGIN
+                NEW.tsv :=
+                to_tsvector('english', COALESCE(NEW.username, '') || ' ' || COALESCE(NEW.full_name, '') || ' ' || COALESCE(NEW.email, ''));
+                RETURN NEW;
+                END
+                $$ LANGUAGE plpgsql;
+                """.trimIndent()
+            )
+            exec(
+                """
+                DROP TRIGGER IF EXISTS customer_tsv_update ON ${CustomerTable.tableName};
+                """.trimIndent()
+            )
+            exec(
+                stmt = """
+                CREATE TRIGGER customer_tsv_update BEFORE INSERT OR UPDATE
+                ON ${CustomerTable.tableName} FOR EACH ROW EXECUTE FUNCTION customer_tsv_trigger();
+                """.trimIndent()
+            )
+
+
+            /**
+             * Full-text search for Supplier
+             */
+            exec(
+                stmt = """
+                    UPDATE ${SupplierTable.tableName}
+                    SET tsv = to_tsvector('english', full_name || ' ' || email)
+                """.trimIndent()
+            )
+            exec(
+                """
+                    DO $$ BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM pg_class c
+                        JOIN pg_namespace n on n.oid = c.relnamespace
+                        WHERE c.relname = 'supplier_tsv_idx'
+                        AND n.nspname = 'public'
+                    ) THEN
+                        EXECUTE 'CREATE INDEX supplier_tsv_idx ON ${SupplierTable.tableName} USING gin(tsv)';
+                    END IF;
+                    END $$;
+                """.trimIndent()
+            )
+            exec(
+                stmt = """
+                CREATE OR REPLACE FUNCTION supplier_tsv_trigger() RETURNS trigger AS $$
+                BEGIN
+                NEW.tsv :=
+                to_tsvector('english', COALESCE(NEW.full_name, '') || ' ' || COALESCE(NEW.email, ''));
+                RETURN NEW;
+                END
+                $$ LANGUAGE plpgsql;
+                """.trimIndent()
+            )
+            exec(
+                """
+                DROP TRIGGER IF EXISTS supplier_tsv_update ON ${SupplierTable.tableName};
+                """.trimIndent()
+            )
+            exec(
+                stmt = """
+                CREATE TRIGGER supplier_tsv_update BEFORE INSERT OR UPDATE
+                ON ${SupplierTable.tableName} FOR EACH ROW EXECUTE FUNCTION supplier_tsv_trigger();
+                """.trimIndent()
+            )
+
+
+            /**
+             * Full-text search for employees
+             */
+            exec(
+                stmt = """
+                    UPDATE ${EmployeeTable.tableName}
+                    SET tsv = to_tsvector('english', username || ' ' || full_name || ' ' || email || ' ' || role)
+                """.trimIndent()
+            )
+            exec(
+                """
+                    DO $$ BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM pg_class c
+                        JOIN pg_namespace n on n.oid = c.relnamespace
+                        WHERE c.relname = 'employee_tsv_idx'
+                        AND n.nspname = 'public'
+                    ) THEN
+                        EXECUTE 'CREATE INDEX employee_tsv_idx ON ${EmployeeTable.tableName} USING gin(tsv)';
+                    END IF;
+                    END $$;
+                """.trimIndent()
+            )
+            exec(
+                stmt = """
+                CREATE OR REPLACE FUNCTION employee_tsv_trigger() RETURNS trigger AS $$
+                BEGIN
+                NEW.tsv :=
+                to_tsvector('english', COALESCE(NEW.username, '') || ' ' || COALESCE(NEW.full_name, '') || ' ' || COALESCE(NEW.email, '') || ' ' || COALESCE(NEW.role));
+                RETURN NEW;
+                END
+                $$ LANGUAGE plpgsql;
+                """.trimIndent()
+            )
+            exec(
+                """
+                DROP TRIGGER IF EXISTS employee_tsv_update ON ${EmployeeTable.tableName};
+                """.trimIndent()
+            )
+            exec(
+                stmt = """
+                CREATE TRIGGER employee_tsv_update BEFORE INSERT OR UPDATE
+                ON ${EmployeeTable.tableName} FOR EACH ROW EXECUTE FUNCTION employee_tsv_trigger();
+                """.trimIndent()
+            )
+
+            /**
+             * Trigger functions and indices for Product table for performing
+             * full-text search
+             */
 
             exec(stmt = "UPDATE ${ProductTable.tableName} SET tsv = to_tsvector('english', name || ' ' || description)")
             exec(
@@ -114,8 +211,7 @@ object DatabaseUtil {
                 END IF;
                 END $$;
             """.trimIndent()
-                        )
-//            exec("CREATE INDEX product_tsv_idx ON ${ProductTable.tableName} USING GIN(tsv)")
+            )
             exec(
                 """
                 CREATE OR REPLACE FUNCTION product_tsv_trigger() RETURNS trigger AS $$
@@ -126,7 +222,7 @@ object DatabaseUtil {
                 END
                 $$ LANGUAGE plpgsql;
                 """.trimIndent()
-                )
+            )
 
             exec(
                 """
@@ -134,16 +230,17 @@ object DatabaseUtil {
                 """.trimIndent()
             )
             exec(
-                """
+                stmt = """
                 CREATE TRIGGER product_tsv_update BEFORE INSERT OR UPDATE
                 ON ${ProductTable.tableName} FOR EACH ROW EXECUTE FUNCTION product_tsv_trigger();
                 """.trimIndent()
             )
 
+
             /*Search for services*/
-            exec(stmt = "UPDATE ${ServiceTable.tableName} SET tsv = to_tsvector('english', name || ' ' || description)")
+            exec(stmt = "UPDATE ${Services.tableName} SET tsv = to_tsvector('english', name || ' ' || description)")
             exec(
-                """
+                stmt = """
                 DO $$ BEGIN
                 IF NOT EXISTS (
                     SELECT 1
@@ -152,12 +249,11 @@ object DatabaseUtil {
                     WHERE  c.relname = 'service_tsv_idx'
                     AND    n.nspname = 'public'
                 ) THEN
-                    EXECUTE 'CREATE INDEX service_tsv_idx ON ${ProductTable.tableName} USING GIN(tsv)';
+                    EXECUTE 'CREATE INDEX service_tsv_idx ON ${Services.tableName} USING GIN(tsv)';
                 END IF;
                 END $$;
             """.trimIndent()
-                        )
-//            exec("CREATE INDEX service_tsv_idx ON ${ServiceTable.tableName} USING GIN(tsv)")
+            )
             exec(
                 """
                 CREATE OR REPLACE FUNCTION service_tsv_trigger() RETURNS trigger AS $$
@@ -171,20 +267,20 @@ object DatabaseUtil {
             )
 
             exec(
-                """
-                DROP TRIGGER IF EXISTS service_tsv_update ON ${ServiceTable.tableName};
+                stmt = """
+                DROP TRIGGER IF EXISTS service_tsv_update ON ${Services.tableName};
             """.trimIndent()
             )
             exec(
-                """
+                stmt = """
                 CREATE TRIGGER service_tsv_update BEFORE INSERT OR UPDATE
-                ON ${ServiceTable.tableName} FOR EACH ROW EXECUTE FUNCTION service_tsv_trigger();
+                ON ${Services.tableName} FOR EACH ROW EXECUTE FUNCTION service_tsv_trigger();
             """.trimIndent()
             )
         }
     }
 
-    suspend fun <T> dbQuery(block: () -> T): T {
+    suspend fun <T> dbQuery(block: Transaction.() -> T): T {
         return newSuspendedTransaction(Dispatchers.IO) { block() }
     }
 }
@@ -199,7 +295,7 @@ fun hikari(): HikariDataSource {
             addDataSourceProperty("user", "postgres")
             addDataSourceProperty("password", System.getenv("DB_PASSWORD"))
 
-            maximumPoolSize = 3
+            maximumPoolSize = 6
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
             validate()

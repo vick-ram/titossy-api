@@ -1,30 +1,43 @@
 package com.example.models.service
 
+import com.example.models.util.BigDecimalSerializer
 import kotlinx.serialization.Serializable
-import org.valiktor.functions.isNotEmpty
-import org.valiktor.functions.isPositive
+import org.valiktor.functions.*
 import org.valiktor.validate
+import java.math.BigDecimal
 
 @Serializable
 data class ServiceRequest(
-    val serviceName: String,
-    val category: Int,
+    val name: String,
     val description: String,
-    val price: Double,
-    val duration: Int,
+    @Serializable(with = BigDecimalSerializer::class)
+    val price: BigDecimal,
     val imageUrl: String?
-) {
-    init {
+) : java.io.Serializable {
+    fun validate(): ServiceRequest {
         validate(this){
-            validate(ServiceRequest::serviceName).isNotEmpty()
-            validate(ServiceRequest::description).isNotEmpty()
-            validate(ServiceRequest::price).isPositive()
-            validate(ServiceRequest::duration).isPositive()
+            validate(ServiceRequest::name).isNull()
+            validate(ServiceRequest::description).isNotNull().hasSize(min = 3, max = 200)
+            validate(ServiceRequest::price).isPositive().isNotZero()
         }
+        return this
     }
 }
 
 @Serializable
-data class CategoryRequest(
-    val name: String
-)
+data class ServiceAddOnRequest(
+    val name: String,
+    val description: String,
+    @Serializable(with = BigDecimalSerializer::class)
+    val price: BigDecimal,
+    val imageUrl: String?
+) : java.io.Serializable {
+    fun validate(): ServiceAddOnRequest {
+        validate(this) {
+            validate(ServiceAddOnRequest::name).hasSize(min = 3, max = 50)
+            validate(ServiceAddOnRequest::description).hasSize(min = 3, max = 200)
+            validate(ServiceAddOnRequest::price).isPositive()
+        }
+        return this
+    }
+}

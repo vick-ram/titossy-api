@@ -1,5 +1,6 @@
 package com.example.models.customer
 
+import com.example.exceptions.password
 import com.example.models.util.ApprovalStatus
 import kotlinx.serialization.Serializable
 import org.valiktor.functions.*
@@ -7,15 +8,18 @@ import org.valiktor.validate
 
 @Serializable
 data class CustomerSignInData(
-    val email: String,
+    val email: String? = null,
+    val username: String? = null,
     val password: String
 ) {
-    init {
+    fun validate(): CustomerSignInData {
         validate(this) {
-            validate(CustomerSignInData::email).isNotBlank().isEmail()
+            validate(CustomerSignInData::email)
+                .isEmail()
             validate(CustomerSignInData::password)
-                .matches(Regex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}\$"))
+                .password()
         }
+        return this
     }
 }
 
@@ -23,9 +27,10 @@ data class CustomerSignInData(
 data class StatusUpdate(
     val status: ApprovalStatus
 ) {
-    init {
+    fun validate(): StatusUpdate {
         validate(this) {
             validate(StatusUpdate::status).isNotNull()
         }
+        return this
     }
 }

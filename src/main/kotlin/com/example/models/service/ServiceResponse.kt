@@ -1,27 +1,43 @@
 package com.example.models.service
 
-import com.example.models.util.DateSerializer
+import com.example.models.util.BigDecimalSerializer
+import com.example.models.util.LocalDateTimeSerializer
+import com.example.models.util.UUIDSerializer
 import kotlinx.serialization.Serializable
+import java.math.BigDecimal
+import java.time.LocalDateTime
 import java.util.*
 
 @Serializable
 data class ServiceResponse(
-    val serviceId: Int,
-    val serviceName: String,
-    val category: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
+    val name: String,
     val description: String,
-    val price: Double,
-    val duration: Int,
-    val imageUrl: String,
-    @Serializable(with = DateSerializer::class)
-    val createdAt: Date,
-    @Serializable(with = DateSerializer::class)
-    val updatedAt: Date
-)
+    @Serializable(with = BigDecimalSerializer::class)
+    val price: BigDecimal,
+    val imageUrl: String?,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val createdAt: LocalDateTime,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val updatedAt: LocalDateTime
+) : java.io.Serializable
 
 @Serializable
-data class CategoryResponse(
-    val id: Int,
-    val name: String
-)
+data class ServiceAddOnResponse(
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
+    @Serializable(with = UUIDSerializer::class)
+    val serviceId: UUID,
+    val name: String,
+    val description: String,
+    @Serializable(with = BigDecimalSerializer::class)
+    val price: BigDecimal,
+    val imageUrl: String?,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val createdAt: LocalDateTime,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val updatedAt: LocalDateTime
+) : java.io.Serializable
+
 

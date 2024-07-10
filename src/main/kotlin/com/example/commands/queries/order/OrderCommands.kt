@@ -1,129 +1,137 @@
 package com.example.commands.queries.order
 
+import com.example.dao.PurchaseOrderRepository
+import com.example.db.cart.ProductCartEntity
+import com.example.db.cart.ProductCarts
 import com.example.db.employee.Employee
-import com.example.db.order.Order
-import com.example.db.order.OrderItem
-import com.example.db.order.OrderTable
+import com.example.db.order.PurchaseOrder
+import com.example.db.order.PurchaseOrderItem
+import com.example.db.order.PurchaseOrders
 import com.example.db.product.Product
 import com.example.db.supplier.Supplier
 import com.example.db.util.DatabaseUtil.dbQuery
-import com.example.models.order.OrderItemResponse
-import com.example.models.order.OrderRequest
-import com.example.models.order.OrderResponse
-import org.jetbrains.exposed.sql.*
-import java.time.LocalDateTime
-import java.time.ZoneId
+import com.example.models.purchase_order.OrderStatus
+import com.example.models.purchase_order.PurchaseOrderRequest
+import com.example.models.purchase_order.PurchaseOrderResponse
+import com.example.models.purchase_order.UpdateOrderStatus
+import org.jetbrains.exposed.sql.selectAll
+import java.math.BigDecimal
 import java.util.*
 
-private fun OrderItem.toOrderItemResponse() = OrderItemResponse(
-    id = this.id.value,
-    orderId = this.id.value,
-    productId = this.productId.id.value,
-    quantity = this.quantity,
-    price = this.price.toDouble()
-)
-
-private fun Order.toOrderResponse() = OrderResponse(
-    oderId = this.id.value,
-    employeeId = this.employeeId.id.value,
-    supplierId = this.supplierId.id.value,
-    orderDate = Date.from(this.orderDate.atZone(ZoneId.systemDefault()).toInstant()),
-    orderItems = this.orderItems.map { it.toOrderItemResponse() },
-    total = this.totalAmount.toDouble(),
-    orderStatus = this.orderStatus
-)
-
-suspend fun createOrder(orderRequest: OrderRequest): OrderResponse {
-    return dbQuery {
-        val newOrder = Order.new {
-            employeeId = Employee[orderRequest.employeeId]
-            supplierId = Supplier[orderRequest.supplierId]
-            orderDate = LocalDateTime.now()
-            totalAmount = orderItems.sumOf { it.price * it.quantity.toBigDecimal() }
-            orderStatus = "PENDING"
+class PurchaseOrderRepositoryImpl : PurchaseOrderRepository {
+    override suspend fun createPurchaseOrder(
+        employeeId: UUID,
+        purchaseOrder: PurchaseOrderRequest
+    ): PurchaseOrderResponse = dbQuery {
+        var totalAmount = BigDecimal.ZERO
+        val newOrder = PurchaseOrder.new {
+            this.employee = Employee[employeeId]
+            this.supplier = Supplier[purchaseOrder.supplierId]
+            this.expectedDate = purchaseOrder.expectedDate
+            this.totalAmount = totalAmount
+            this.orderStatus = OrderStatus.PENDING
         }
-        orderRequest.orderItems.forEach {
-            OrderItem.new {
-                orderId = newOrder
-                productId = Product[it.productId]
-                quantity = it.quantity
-                price = Product[it.productId].price
+        val cartItems = ProductCartEntity.find { ProductCarts.employee eq employeeId }.toList()
+
+        cartItems.forEach { cartItem ->
+            val subtotal = cartItem.quantity.toBigDecimal().times(cartItem.product.price)
+            PurchaseOrderItem.new {
+                this.order = newOrder
+                this.product = cartItem.product
+                this.quantity = cartItem.quantity
+                this.unitPrice = cartItem.product.price
+                this.subtotal = subtotal
             }
+            totalAmount += subtotal
         }
-        newOrder.toOrderResponse()
+        newOrder.totalAmount = totalAmount
+        cartItems.forEach { it.delete() }
+        return@dbQuery newOrder.toOrderResponse()
     }
-}
 
-suspend fun getOrders(): List<OrderResponse> = dbQuery {
-    return@dbQuery try {
-        Order.all().map(Order::toOrderResponse)
-    }catch (e: Exception){
-        emptyList()
+    override suspend fun getFilteredPurchaseOrders(filter: (PurchaseOrder) -> Boolean): List<PurchaseOrderResponse> =
+        dbQuery {
+            PurchaseOrder.all()
+                .filter(filter)
+                .sortedByDescending { it.createdAt.coerceAtLeast(it.updatedAt) }
+                .map { it.toOrderResponse() }
+        }
+
+    override suspend fun searchPurchaseOrder(query: String?): List<PurchaseOrderResponse> = dbQuery {
+        PurchaseOrder.all()
+            .filter { order ->
+                if (query != null) {
+                    order.employee.fullName.contains(query, ignoreCase = true)
+                            || order.supplier.email.contains(query, ignoreCase = true)
+                            || order.orderStatus.name.contains(query, ignoreCase = true)
+                } else {
+                    true
+                }
+            }
+            .sortedByDescending { it.createdAt.coerceAtLeast(it.updatedAt) }
+            .map { it.toOrderResponse() }
     }
-}
 
-suspend fun getOrderById(orderId: Int): OrderResponse? = dbQuery {
-    return@dbQuery try {
-        Order.findById(orderId)?.toOrderResponse()
-    }catch (e: Exception) {
-        null
+    override suspend fun updatePurchaseOrderStatus(
+        purchaseOrderId: String,
+        orderStatus: UpdateOrderStatus
+    ): Boolean =
+        dbQuery {
+            val orderToUpdate = PurchaseOrder.find { PurchaseOrders.id eq purchaseOrderId }.singleOrNull()
+            if (orderToUpdate != null && orderStatus.status == OrderStatus.DELIVERED) {
+                orderToUpdate.purchaseOrderItems.forEach { item ->
+                    val product = item.product
+                    product.stock += item.quantity
+                    product.flush()
+                }
+            }
+            orderToUpdate?.orderStatus = orderStatus.status
+            orderToUpdate?.flush()
+            /*PurchaseOrder.findByIdAndUpdate(purchaseOrderId) { update ->
+                update.orderStatus = orderStatus.status
+            }*/
+            return@dbQuery true
+        }
+
+    override suspend fun updatePurchaseOrder(
+        employeeId: UUID,
+        id: String,
+        purchaseOrder: PurchaseOrderRequest
+    ): Boolean = dbQuery {
+        val purchaseOrderFromDb = PurchaseOrders.selectAll().where { PurchaseOrders.id eq id }
+        val purchaseOrderExists = purchaseOrderFromDb.count() > 0
+        var totalAmount = BigDecimal.ZERO
+        if (!purchaseOrderExists) {
+            throw IllegalArgumentException("product with id $id does not exist")
+        }
+        val newOrderUpdate = PurchaseOrder.findByIdAndUpdate(id) { update ->
+            update.employee = Employee[employeeId]
+            update.supplier = Supplier[purchaseOrder.supplierId]
+            update.expectedDate = purchaseOrder.expectedDate
+            update.totalAmount = totalAmount
+        }
+
+        purchaseOrder.products?.forEach { purchaseOrderItem ->
+            val subtotal = purchaseOrderItem.unitPrice.times(purchaseOrderItem.quantity.toBigDecimal())
+            PurchaseOrderItem.new {
+                this.order = newOrderUpdate!!
+                this.product = Product[purchaseOrderItem.productId]
+                this.quantity = purchaseOrderItem.quantity
+                this.unitPrice = purchaseOrderItem.unitPrice
+                this.subtotal = subtotal
+            }
+            totalAmount += subtotal
+        }
+        newOrderUpdate?.totalAmount = totalAmount
+        return@dbQuery true
     }
-}
 
-suspend fun getOrdersByEmployeeId(employeeId: Int): List<OrderResponse> = dbQuery {
-    return@dbQuery try {
-        Order.find { OrderTable.employeeId eq employeeId }.map(Order::toOrderResponse)
-    }catch (e: Exception){
-        emptyList()
-    }
-}
-
-suspend fun getOrdersBySupplierId(supplierId: Int): List<OrderResponse> = dbQuery {
-    return@dbQuery try {
-        Order.find { OrderTable.supplierId eq supplierId }.map(Order::toOrderResponse)
-    }catch (e: Exception){
-        emptyList()
-    }
-}
-
-suspend fun getOrdersByDate(date: Date): List<OrderResponse> = dbQuery {
-    return@dbQuery try {
-        val localDateTime = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault())
-        val startOfDay = localDateTime.withHour(0).withMinute(0).withSecond(0).withNano(0)
-        Order.find {
-            OrderTable.orderDate greaterEq startOfDay and
-                    (OrderTable.orderDate less localDateTime.plusDays(1).withHour(0).withMinute(0).withSecond(0)
-                        .withNano(0))
-        }.map { it.toOrderResponse() }
-    } catch (e: Exception) {
-        emptyList()
-    }
-}
-
-suspend fun getOrdersByStatus(orderStatus: String): List<OrderResponse> = dbQuery {
-    return@dbQuery try {
-        Order.find { OrderTable.orderStatus eq orderStatus }.map(Order::toOrderResponse)
-    }catch (e: Exception){
-        emptyList()
-    }
-}
-
-suspend fun updateOrderStatus(orderId: Int, orderStatus: String): OrderResponse? = dbQuery {
-    return@dbQuery try {
-        val order = Order.findById(orderId) ?: return@dbQuery null
-        order.orderStatus = orderStatus
-        order.toOrderResponse()
-    } catch (e: Exception){
-        null
-    }
-}
-
-suspend fun deleteOrder(orderId: Int): Boolean = dbQuery {
-    return@dbQuery try {
-        val order = Order.findById(orderId) ?: return@dbQuery false
-        order.delete()
-        true
-    }catch (e: Exception){
-        false
+    override suspend fun deletePurchaseOrder(purchaseOrderId: String): Boolean = dbQuery {
+        val purchaseOrderExists = PurchaseOrders.selectAll().where { PurchaseOrders.id eq purchaseOrderId }.count() > 0
+        if (!purchaseOrderExists) {
+            throw IllegalArgumentException("product with id $purchaseOrderId does not exist")
+        }
+        PurchaseOrder.findById(purchaseOrderId)?.delete()
+        return@dbQuery true
     }
 }

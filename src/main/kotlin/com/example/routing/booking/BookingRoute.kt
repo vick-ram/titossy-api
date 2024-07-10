@@ -1,111 +1,217 @@
 package com.example.routing.booking
 
-import com.example.commands.queries.booking.*
+import com.example.commands.queries.booking.BookingCache
+import com.example.commands.queries.booking.BookingRepositoryImpl
+import com.example.dao.BookingRepository
+import com.example.exceptions.ApiResponse
+import com.example.exceptions.UnexpectedError
 import com.example.models.booking.BookingRequest
 import com.example.models.booking.BookingStatus
 import com.example.models.booking.UpdateBookingStatus
+import com.example.routing.util.Booking
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.request.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
+import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import java.io.File
 import java.util.*
 
 fun Route.bookingRoute() {
-    route("/booking") {
-        post {
-            val bookingRequest = call.receive<BookingRequest>()
-            val booking = createBooking(bookingRequest)
+    val dao: BookingRepository = BookingCache(
+        BookingRepositoryImpl(),
+        environment?.config?.property("storage.ehcacheFilePath")?.getString()?.let { File(it) }
+    )
+    authenticate("auth-jwt") {
+        post<Booking, BookingRequest> { _, bookingReq ->
             try {
-                booking.let { call.respond(booking) }
+
+                val principal = call.principal<JWTPrincipal>()
+                val customerId = principal?.subject
+                call.respond(
+                    ApiResponse.success(
+                        HttpStatusCode.Created,
+                        customerId?.let { dao.createNewBooking(UUID.fromString(it), bookingReq) },
+                        "Successfully created booking"
+                    )
+                )
             } catch (e: Exception) {
-                call.respond("Booking failed: ${e.message}")
+                when (e) {
+                    is IllegalArgumentException -> call.respond(
+                        ApiResponse.error(
+                            HttpStatusCode.BadRequest,
+                            e.message
+                        )
+                    )
+
+                    is UnexpectedError -> call.respond(
+                        ApiResponse.error(
+                            HttpStatusCode.InternalServerError,
+                            e.message
+                        )
+                    )
+
+                    else -> call.respond(
+                        ApiResponse.error(
+                            HttpStatusCode.InternalServerError,
+                            e.message
+                        )
+                    )
+                }
             }
         }
+    }
 
-        patch("/{id}") {
-            val update = call.receive<UpdateBookingStatus>()
+    authenticate("auth-jwt") {
+        put<Booking.Id, BookingRequest> { param, bookingUpdate ->
+            val principal = call.principal<JWTPrincipal>()
+            val customerId = principal?.subject
             try {
-                val bookingStatus = updateBookingStatus(update.bookingId, update.status)
-                call.respond(HttpStatusCode.OK, bookingStatus)
+                customerId?.let {
+                    dao.updateBooking(
+                        UUID.fromString(it),
+                        param.id, bookingUpdate
+                    )
+                }
+                call.respond(
+                    ApiResponse.success(
+                        HttpStatusCode.Accepted,
+                        null,
+                        "Booking successfully updated"
+                    )
+                )
             } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, "Booking update failed: ${e.message}")
+                call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.Conflict,
+                        e.message
+                    )
+                )
             }
         }
+    }
 
-        get {
-            val allBookings = getBookings()
+    patch<Booking.Id, UpdateBookingStatus> { param, bookingUpdate ->
+        try {
+            val updatedBooking = dao.updateBookingStatus(param.id, bookingUpdate)
+            if (updatedBooking)
+                dao.updateBookingStatus(param.id, bookingUpdate)
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    null,
+                    "Successfully updated booking status"
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                ApiResponse.error(
+                    HttpStatusCode.InternalServerError,
+                    e.message
+                )
+            )
+        }
+    }
+
+    get<Booking> { param ->
+        when {
+            param.status != null -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    dao.getFilteredBookings {
+                        it.bookingStatus == BookingStatus.valueOf(param.status)
+                    },
+                    null
+                )
+            )
+
+            param.date != null -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    dao.getFilteredBookings { it.bookingDateTime == param.date },
+                    null
+                )
+            )
+
+            else -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    dao.getFilteredBookings { true },
+                    null
+                )
+            )
+        }
+    }
+
+    authenticate("auth-jwt") {
+        get("/api/booking/customer") {
             try {
-                allBookings.forEach { call.respond(it) }
+                val principal = call.principal<JWTPrincipal>()
+                val customerId = principal?.subject?.let { UUID.fromString(it) } ?: return@get
+                call.respond(
+                    ApiResponse.success(
+                        HttpStatusCode.OK,
+                        dao.getFilteredBookings { it.customer.id.value == customerId },
+                        null
+                    )
+                )
             } catch (e: Exception) {
-                call.respond("Booking failed: ${e.message}")
+                e.printStackTrace()
             }
         }
+    }
 
-        get("/date/{date}"){
-            val dateString = call.parameters["date"]
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val date = LocalDate.parse(dateString, formatter)
-            val bookingResponse = getBookingsByDate(Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()))
-            if (bookingResponse.isNotEmpty()) {
-                call.respond(HttpStatusCode.OK, bookingResponse)
-            } else {
-                call.respond(HttpStatusCode.NotFound, "No orders found for the given date")
+    get<Booking.Id> { param ->
+        call.respond(
+            ApiResponse.success(
+                HttpStatusCode.OK,
+                dao.getFilteredBookings { it.id.value == param.id }.firstOrNull(),
+                null
+            )
+        )
+    }
+
+
+    delete<Booking.Id> { param ->
+        try {
+            dao.deleteBooking(param.id)
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.NoContent,
+                    null,
+                    "Successfully deleted booking"
+                )
+            )
+        } catch (e: Exception) {
+            when (e) {
+                is IllegalArgumentException -> call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.BadRequest,
+                        e.message
+                    )
+                )
             }
         }
-
-        get("/{id}") {
-            val id = call.parameters["id"]?.toIntOrNull() ?: return@get call.respond("Invalid id")
-            try {
-                val booking = getBooking(id)
-                booking?.let { call.respond(it) }
-            } catch (e: Exception) {
-                call.respond("${e.message}")
-            }
-        }
-
-        get("/status/{status}") {
-            val status = call.parameters["status"]?.let { BookingStatus.valueOf(it) }
-                ?: return@get call.respond("Invalid status")
-            try {
-                val booking = getBookingsByStatus(status)
-                booking.forEach { call.respond(it) }
-            } catch (e: Exception) {
-                call.respond("${e.message}")
-            }
-        }
-
-        get("/customer/{customerId}") {
-            val customerId = call.parameters["customerId"]?.toIntOrNull() ?: return@get call.respond("Invalid id")
-            try {
-                val booking = getBookingsByCustomerId(customerId)
-                booking.forEach { call.respond(it) }
-            } catch (e: Exception) {
-                call.respond("${e.message}")
-            }
-        }
-
-        get("/employee/{employeeId}") {
-            val employeeId = call.parameters["employeeId"]?.toIntOrNull() ?: return@get call.respond("Invalid id")
-            try {
-                val booking = getBookingsByEmployeeId(employeeId)
-                booking.forEach { call.respond(it) }
-            } catch (e: Exception) {
-                call.respond("${e.message}")
-            }
-        }
-
-        delete("/{id}") {
-            val id = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respond("Invalid id")
-            try {
-                val booking = deleteBooking(id)
-                call.respond(booking)
-            } catch (e: Exception) {
-                call.respond("${e.message}")
-            }
+    }
+    delete("/api/booking/clear") {
+        try {
+            dao.clearBookings()
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.NoContent,
+                    null,
+                    "Successfully cleared bookings"
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                ApiResponse.error(
+                    HttpStatusCode.InternalServerError,
+                    e.message
+                )
+            )
         }
     }
 }

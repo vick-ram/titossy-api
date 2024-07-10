@@ -1,91 +1,275 @@
 package com.example.routing.employee
 
-import com.example.commands.queries.employee.deleteEmployee
-import com.example.commands.queries.employee.getAllEmployees
-import com.example.commands.queries.employee.getEmployeeById
-import com.example.commands.queries.employee.updateEmployee
-import com.example.models.employee.EmployeeUpdate
+import com.example.commands.queries.employee.*
+import com.example.exceptions.*
+import com.example.models.employee.*
+import com.example.routing.util.Employee
+import com.example.routing.withRole
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.request.*
+import io.ktor.server.plugins.*
+import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import javax.security.auth.login.FailedLoginException
 
 fun Route.employeeRoutes() {
-    route("/employee") {
-        get {
-            val employees = getAllEmployees()
-            try {
-                employees.let {
-                    call.respond(HttpStatusCode.OK, it)
-                }
-            } catch (e: Exception) {
-                call.respond("${e.message}")
+    post<Employee.Auth.SignUp, EmployeeRequest> { _, employeeRequest ->
+        val employee = employeeRequest.validate()
+        try {
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.Created,
+                    createEmployee(employee),
+                    "Employee created successfully"
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                ApiResponse.error(
+                    HttpStatusCode.Conflict,
+                    e.message
+                )
+            )
+        }
+    }
 
-            }
-        }
-        get("/{id}") {
-            val id = call.parameters["id"]?.toInt() ?: 0
-            val employee = getEmployeeById(id)
-            try {
-                employee?.let {
-                    call.respond(HttpStatusCode.OK, it)
-                }
-            } catch (e: Exception) {
-                call.respond("${e.message}")
-            }
-        }
-        put("/{id}") {
-            val id = call.parameters["id"]?.toInt() ?: 0
-            val employee = call.receive<EmployeeUpdate>()
+    post<Employee.Auth.SignIn, EmployeeCredentials> { _, cred ->
+        val employee = cred.validate()
+        try {
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    signInEmployee(employee),
+                    "Signed in successfully"
+                )
+            )
+        } catch (e: Exception) {
+            when (e) {
+                is NotFoundException -> call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.NotFound,
+                        e.message
+                    )
+                )
 
-            try {
-                updateEmployee(id, employee)
-                call.respond(HttpStatusCode.OK, "Employee updated successfully")
-            } catch (e: Exception) {
-                call.respond("${e.message}")
-            }
-        }
-        authenticate("auth-jwt") {
-            delete("/{id}") {
-                val id = call.parameters["id"]?.toInt() ?: 0
-                try {
-                    deleteEmployee(id)
-                    call.respond(HttpStatusCode.Conflict, "Employee deleted successfully")
-                } catch (e: Exception) {
-                    call.respond("${e.message}")
-                }
-            }
-        }
+                is InvalidCredentials -> call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.BadRequest,
+                        e.message
+                    )
+                )
 
-        /*withRole("MANAGER") {
-            webSocket("/chat") {
-                val role = call.principal<JWTPrincipal>("role")?.toString()
-                incoming.consumeEach {
-                    if (it is Frame.Text) {
-                        outgoing.send(Frame.Text("You said: ${it.readText()}"))
-                    }
-                }
-                incoming.receiveAsFlow().map {
-                    if (it is Frame.Text) {
-                        outgoing.send(Frame.Text("You said: ${it.readText()}"))
-                    } else {
-                        "Error: Frame is not text"
-                    }
-                }
-                for (frame in incoming) {
-                    if (frame is Frame.Text) {
-                        val text = frame.readText()
-                        outgoing.send(Frame.Text("You said: $text"))
-                    }
-                }
-                try {
-                    outgoing.send(Frame.Text("You are connected as a $role"))
-                } catch (e: Exception) {
-                    outgoing.send(Frame.Text("Error: ${e.message}"))
+                is FailedLoginException -> call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.InternalServerError,
+                        e.message
+                    )
+                )
+            }
+
+        }
+    }
+
+    authenticate("auth-jwt") {
+        post("/api/employee/auth/sign_out") {
+            val token = call.request.headers["Authorization"].toString().removePrefix("Bearer ")
+            try {
+                signOutEmployee(token)
+                call.respond(
+                    ApiResponse.success(
+                        HttpStatusCode.OK,
+                        "",
+                        "Signed out successfully"
+                    )
+                )
+            } catch (e: Exception) {
+                when (e) {
+
+                    is TokenAlreadyBlacklisted -> call.respond(
+                        ApiResponse.error(
+                            HttpStatusCode.BadRequest,
+                            e.message
+                        )
+                    )
+
+                    is InvalidToken -> call.respond(
+                        ApiResponse.error(
+                            HttpStatusCode.BadRequest,
+                            e.message
+                        )
+                    )
+
+                    is UnexpectedError -> call.respond(
+                        ApiResponse.error(
+                            HttpStatusCode.InternalServerError,
+                            e.message
+                        )
+                    )
                 }
             }
-        }*/
+        }
+    }
+
+
+    get<Employee> { query ->
+        when {
+            query.email != null -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    filteredEmployees { it.email == query.email }?.firstOrNull(),
+                    "Employee fetched successfully"
+                )
+            )
+
+            query.username != null -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    filteredEmployees { it.username == query.username }?.firstOrNull(),
+                    null
+                )
+            )
+
+            query.status != null -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    filteredEmployees { it.availability == Availability.valueOf(query.status) },
+                    null
+                )
+            )
+
+            query.role != null -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    filteredEmployees { it.role == Roles.valueOf(query.role) },
+                    null
+                )
+            )
+
+            query.search != null -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    searchEmployee(query.search),
+                    null
+                )
+            )
+
+            else -> call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    filteredEmployees { true },
+                    null
+                )
+            )
+        }
+    }
+
+
+    get<Employee.Id> { param ->
+        try {
+            call.respond(
+                ApiResponse.success(
+                    HttpStatusCode.OK,
+                    filteredEmployees { it.id.value == param.id }?.firstOrNull(),
+                    "Employee fetched successfully"
+                )
+            )
+        } catch (e: Exception) {
+            when (e) {
+                is NoRecordFoundException -> call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.NotFound,
+                        e.message
+                    )
+                )
+
+                is UnexpectedError -> call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.InternalServerError,
+                        e.message
+                    )
+                )
+            }
+        }
+    }
+
+
+    authenticate("auth-jwt") {
+        put<Employee.Id, EmployeeRequest> { param, employeeUpdate ->
+            val employee = employeeUpdate.validate()
+            try {
+                updateEmployee(param.id, employee)
+                call.respond(
+                    ApiResponse.success(
+                        HttpStatusCode.OK,
+                        null,
+                        "Employee updated successfully"
+                    )
+                )
+            } catch (e: Exception) {
+                when (e) {
+                    is FailedToCreate -> call.respond(
+                        ApiResponse.error(
+                            HttpStatusCode.Conflict,
+                            e.message
+                        )
+                    )
+
+                    else -> call.respond(
+                        ApiResponse.error(
+                            HttpStatusCode.InternalServerError,
+                            e.message
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    authenticate("auth-jwt") {
+        patch<Employee.Id, UpdateEmployeeAvailability> { param, updateEmployeeAvailability ->
+            try {
+                updateEmployeeAvailability(param.id, updateEmployeeAvailability)
+                call.respond(
+                    ApiResponse.success(
+                        HttpStatusCode.OK,
+                        "",
+                        "Employee availability updated successfully"
+                    )
+                )
+            } catch (e: Exception) {
+                call.respond(
+                    ApiResponse.error(
+                        HttpStatusCode.Conflict,
+                        e.message
+                    )
+                )
+            }
+        }
+    }
+
+    authenticate("auth-jwt") {
+        delete<Employee.Id> { param ->
+            try {
+                deleteEmployee(param.id)
+                call.respond(
+                    ApiResponse.success(
+                        HttpStatusCode.NoContent,
+                        "",
+                        "Employee deleted successfully"
+                    )
+                )
+            } catch (e: Exception) {
+                when (e) {
+                    is IllegalArgumentException -> call.respond(
+                        ApiResponse.error(
+                            HttpStatusCode.Conflict,
+                            e.message
+                        )
+                    )
+                }
+            }
+        }
     }
 }

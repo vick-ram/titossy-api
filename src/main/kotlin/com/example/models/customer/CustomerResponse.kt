@@ -1,25 +1,25 @@
 package com.example.models.customer
 
-import com.example.models.customer.address.CustomerAddressResponse
 import com.example.models.util.ApprovalStatus
-import com.example.models.util.DateSerializer
+import com.example.models.util.LocalDateTimeSerializer
+import com.example.models.util.UUIDSerializer
 import kotlinx.serialization.Serializable
-import java.util.Date
+import java.time.LocalDateTime
+import java.util.*
 
 @Serializable
 data class CustomerResponse(
-    val id: Int,
+    @Serializable(with = UUIDSerializer::class)
+    val id: UUID,
     val username: String,
-    val firstName: String,
-    val lastName: String,
-    val phone: Long,
-    val address: CustomerAddressResponse,
-    val gender: Gender,
+    val fullName: String,
+    val phone: String,
+    val address: String?,
     val email: String,
     val password: String,
     val status: ApprovalStatus,
-    @Serializable(with = DateSerializer::class)
-    val createdAt: Date,
-    @Serializable(with = DateSerializer::class)
-    val updatedAt: Date
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val createdAt: LocalDateTime,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val updatedAt: LocalDateTime
 )
