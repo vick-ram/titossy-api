@@ -14,7 +14,7 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import java.util.UUID
+import java.util.*
 
 fun Route.orderRoutes() {
     val orderImpl: PurchaseOrderRepository = PurchaseOrderRepositoryImpl()
@@ -63,7 +63,7 @@ fun Route.orderRoutes() {
                     ApiResponse.success(
                         HttpStatusCode.OK,
                         orderImpl.getFilteredPurchaseOrders { true },
-                        "All orders"
+                        null
                     )
                 )
             }
@@ -91,8 +91,10 @@ fun Route.orderRoutes() {
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.OK,
-                    orderImpl.getFilteredPurchaseOrders { it.id.value == param.id },
-                    "Order found"
+                    orderImpl.getFilteredPurchaseOrders {
+                        it.id.value == param.id
+                    }.firstOrNull(),
+                    null
                 )
             )
         } catch (e: Exception) {

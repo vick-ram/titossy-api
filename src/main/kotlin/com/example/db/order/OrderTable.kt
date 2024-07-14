@@ -23,6 +23,7 @@ object PurchaseOrders : CustomStringTable("purchase_orders") {
     val supplier = reference("supplier_id", SupplierTable, onDelete = ReferenceOption.CASCADE)
     val expectedDate = date("expected_date").clientDefault { LocalDate.now() }
     val totalAmount = decimal("total_amount", 10, 2)
+    val paid = bool("paid").default(false)
     val orderStatus = customEnumeration(
         "order_status",
         "order_status",
@@ -46,6 +47,7 @@ class PurchaseOrder(id: EntityID<String>) : CustomStringEntity(id, PurchaseOrder
     var supplier by Supplier referencedOn PurchaseOrders.supplier
     var expectedDate by PurchaseOrders.expectedDate
     var totalAmount by PurchaseOrders.totalAmount
+    var paid by PurchaseOrders.paid
     var orderStatus by PurchaseOrders.orderStatus
 
     val purchaseOrderItems by PurchaseOrderItem referrersOn PurchaseOrderItems.order
@@ -57,6 +59,7 @@ class PurchaseOrder(id: EntityID<String>) : CustomStringEntity(id, PurchaseOrder
         expectedDate = expectedDate,
         purchaseOrderItems = purchaseOrderItems.map { it.toPurchaseOrderItemResponse() }.toMutableList(),
         totalAmount = this.totalAmount,
+        paid = paid,
         orderStatus = orderStatus,
         createdAt = createdAt,
         updatedAt = updatedAt

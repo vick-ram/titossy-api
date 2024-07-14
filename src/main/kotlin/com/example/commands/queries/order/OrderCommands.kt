@@ -7,7 +7,6 @@ import com.example.db.employee.Employee
 import com.example.db.order.PurchaseOrder
 import com.example.db.order.PurchaseOrderItem
 import com.example.db.order.PurchaseOrders
-import com.example.db.product.Product
 import com.example.db.supplier.Supplier
 import com.example.db.util.DatabaseUtil.dbQuery
 import com.example.models.purchase_order.OrderStatus
@@ -49,7 +48,9 @@ class PurchaseOrderRepositoryImpl : PurchaseOrderRepository {
         return@dbQuery newOrder.toOrderResponse()
     }
 
-    override suspend fun getFilteredPurchaseOrders(filter: (PurchaseOrder) -> Boolean): List<PurchaseOrderResponse> =
+    override suspend fun getFilteredPurchaseOrders(
+        filter: (PurchaseOrder) -> Boolean
+    ): List<PurchaseOrderResponse> =
         dbQuery {
             PurchaseOrder.all()
                 .filter(filter)
@@ -78,7 +79,7 @@ class PurchaseOrderRepositoryImpl : PurchaseOrderRepository {
     ): Boolean =
         dbQuery {
             val orderToUpdate = PurchaseOrder.find { PurchaseOrders.id eq purchaseOrderId }.singleOrNull()
-            if (orderToUpdate != null && orderStatus.status == OrderStatus.DELIVERED) {
+            if (orderToUpdate != null && orderStatus.status == OrderStatus.RECEIVED) {
                 orderToUpdate.purchaseOrderItems.forEach { item ->
                     val product = item.product
                     product.stock += item.quantity
@@ -109,18 +110,6 @@ class PurchaseOrderRepositoryImpl : PurchaseOrderRepository {
             update.supplier = Supplier[purchaseOrder.supplierId]
             update.expectedDate = purchaseOrder.expectedDate
             update.totalAmount = totalAmount
-        }
-
-        purchaseOrder.products?.forEach { purchaseOrderItem ->
-            val subtotal = purchaseOrderItem.unitPrice.times(purchaseOrderItem.quantity.toBigDecimal())
-            PurchaseOrderItem.new {
-                this.order = newOrderUpdate!!
-                this.product = Product[purchaseOrderItem.productId]
-                this.quantity = purchaseOrderItem.quantity
-                this.unitPrice = purchaseOrderItem.unitPrice
-                this.subtotal = subtotal
-            }
-            totalAmount += subtotal
         }
         newOrderUpdate?.totalAmount = totalAmount
         return@dbQuery true

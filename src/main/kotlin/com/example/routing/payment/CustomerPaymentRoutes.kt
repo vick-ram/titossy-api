@@ -134,7 +134,10 @@ fun Route.customerPaymentRoutes() {
 
     put<Payment.Customer.Id, CustomerPaymentRequest> { param, paymentUpdateRequest ->
         try {
-            customerPaymentRepo.updateCustomerPayment(param.id, paymentUpdateRequest.validate())
+            customerPaymentRepo.updateCustomerPayment(
+                param.id,
+                paymentUpdateRequest.validate()
+            )
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.OK,
@@ -156,7 +159,10 @@ fun Route.customerPaymentRoutes() {
 
     patch<Payment.Customer.Id, PaymentUpdateStatus> { param, statusUpdate ->
         try {
-            customerPaymentRepo.updatePaymentStatus(param.id, statusUpdate.validate())
+            customerPaymentRepo.updatePaymentStatus(
+                param.id,
+                statusUpdate.validate()
+            )
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.Accepted,

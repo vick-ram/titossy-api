@@ -9,31 +9,41 @@ import com.example.models.payment.SupplierPaymentRequest
 import com.example.routing.util.Payment
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import java.util.*
 
 fun Route.supplierPaymentRoutes() {
 
     val supplierPaymentRepo: SupplierPaymentRepository = SupplierPaymentRepositoryImpl()
-
-    post<Payment.Supplier, SupplierPaymentRequest> { _, paymentRequest ->
-        try {
-            call.respond(
-                ApiResponse.success(
-                    HttpStatusCode.Created,
-                    supplierPaymentRepo.createPayment(paymentRequest.validate()),
-                    "Payment made successfully"
-                )
-            )
-        } catch (e: Exception) {
-            when (e) {
-                is IllegalArgumentException -> call.respond(
-                    ApiResponse.error(
-                        HttpStatusCode.Conflict,
-                        e.message
+    authenticate("auth-jwt") {
+        post<Payment.Supplier, SupplierPaymentRequest> { _, paymentRequest ->
+            try {
+                val principal = call.principal<JWTPrincipal>()
+                val employeeId = principal?.subject.let { UUID.fromString(it) }
+                    ?: return@post
+                call.respond(
+                    ApiResponse.success(
+                        HttpStatusCode.Created,
+                        supplierPaymentRepo.createPayment(
+                            employeeId = employeeId,
+                            paymentRequest.validate()
+                        ),
+                        "Payment made successfully"
                     )
                 )
+            } catch (e: Exception) {
+                when (e) {
+                    is IllegalArgumentException -> call.respond(
+                        ApiResponse.error(
+                            HttpStatusCode.Conflict,
+                            e.message
+                        )
+                    )
+                }
             }
         }
     }
@@ -44,23 +54,19 @@ fun Route.supplierPaymentRoutes() {
                 query.paymentStatus != null -> call.respond(
                     ApiResponse.success(
                         HttpStatusCode.OK,
-                        supplierPaymentRepo.filteredSupplierPayment { it.paymentStatus == PaymentStatus.valueOf(query.paymentStatus) },
+                        supplierPaymentRepo.filteredSupplierPayment {
+                            it.paymentStatus == PaymentStatus.valueOf(query.paymentStatus)
+                        },
                         null
                     )
                 )
 
-                /*query.phone != null -> call.respond(
-                    ApiResponse.success(
-                        HttpStatusCode.OK,
-                        supplierPaymentRepo.filteredSupplierPayment { it == query.phone },
-                        null
-                    )
-                )*/
-
                 query.refNumber != null -> call.respond(
                     ApiResponse.success(
                         HttpStatusCode.OK,
-                        supplierPaymentRepo.filteredSupplierPayment { it.refNumber == query.refNumber }.firstOrNull(),
+                        supplierPaymentRepo.filteredSupplierPayment {
+                            it.refNumber == query.refNumber
+                        }.firstOrNull(),
                         null
                     )
                 )
@@ -68,7 +74,9 @@ fun Route.supplierPaymentRoutes() {
                 query.date != null -> call.respond(
                     ApiResponse.success(
                         HttpStatusCode.OK,
-                        supplierPaymentRepo.filteredSupplierPayment { it.createdAt == query.date },
+                        supplierPaymentRepo.filteredSupplierPayment {
+                            it.createdAt == query.date
+                        },
                         null
                     )
                 )
@@ -98,7 +106,9 @@ fun Route.supplierPaymentRoutes() {
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.OK,
-                    supplierPaymentRepo.filteredSupplierPayment { it.id.value == param.id }.firstOrNull(),
+                    supplierPaymentRepo.filteredSupplierPayment {
+                        it.id.value == param.id
+                    }.firstOrNull(),
                     null
                 )
             )
@@ -114,14 +124,22 @@ fun Route.supplierPaymentRoutes() {
         }
     }
 
+    authenticate("auth-jwt") {
     put<Payment.Supplier.Id, SupplierPaymentRequest> { param, paymentUpdateRequest ->
         try {
-            supplierPaymentRepo.updateSupplierPayment(param.id, paymentUpdateRequest.validate())
+            val principal = call.principal<JWTPrincipal>()
+            val employeeId = principal?.subject?.let { UUID.fromString(it) }
+                ?: return@put
+            supplierPaymentRepo.updateSupplierPayment(
+                param.id,
+                employeeId = employeeId,
+                paymentUpdateRequest.validate()
+            )
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.OK,
                     null,
-                    "Customer payment successfully updated"
+                    "payment successfully updated"
                 )
             )
         } catch (e: Exception) {
@@ -135,15 +153,19 @@ fun Route.supplierPaymentRoutes() {
             }
         }
     }
+    }
 
     patch<Payment.Supplier.Id, PaymentUpdateStatus> { param, statusUpdate ->
         try {
-            supplierPaymentRepo.updatePaymentStatus(param.id, statusUpdate.validate())
+            supplierPaymentRepo.updatePaymentStatus(
+                param.id,
+                statusUpdate.validate()
+            )
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.Accepted,
                     null,
-                    "Customer payment status successfully updated"
+                    "payment status successfully updated"
                 )
             )
         } catch (e: Exception) {

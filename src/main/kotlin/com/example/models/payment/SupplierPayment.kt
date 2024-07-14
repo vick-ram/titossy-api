@@ -13,15 +13,13 @@ import java.util.*
 
 @Serializable
 data class SupplierPaymentRequest(
-    @Serializable(with = UUIDSerializer::class)
-    val employeeId: UUID,
     val orderId: String,
     val method: PaymentMethod
 ) {
     fun validate(): SupplierPaymentRequest {
         validate(this) {
             validate(SupplierPaymentRequest::orderId).isNotNull()
-            validate(SupplierPaymentRequest::method).isIn(*PaymentMethod::class.java.enumConstants)
+            validate(SupplierPaymentRequest::method).isIn(PaymentMethod.entries)
         }
         return this
     }
@@ -30,10 +28,10 @@ data class SupplierPaymentRequest(
 @Serializable
 data class SupplierPaymentResponse(
     @Serializable(with = UUIDSerializer::class)
-    val supplierPaymentID: UUID,
-    @Serializable(with = UUIDSerializer::class)
-    val employeeId: UUID,
+    val paymentId: UUID,
+    val employee: String,
     val orderId: String,
+    val supplier: String,
     @Serializable(with = LocalDateTimeSerializer::class)
     val paymentDate: LocalDateTime,
     @Serializable(with = BigDecimalSerializer::class)

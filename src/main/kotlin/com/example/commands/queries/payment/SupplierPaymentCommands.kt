@@ -10,62 +10,73 @@ import com.example.models.payment.PaymentStatus
 import com.example.models.payment.PaymentUpdateStatus
 import com.example.models.payment.SupplierPaymentRequest
 import com.example.models.payment.SupplierPaymentResponse
+import com.example.models.purchase_order.OrderStatus
 import com.example.models.util.generateRandomString
 import io.ktor.server.plugins.*
 import org.jetbrains.exposed.sql.selectAll
-import java.math.BigDecimal
 import java.util.*
 
 class SupplierPaymentRepositoryImpl : SupplierPaymentRepository {
-    override suspend fun createPayment(payment: SupplierPaymentRequest): SupplierPaymentResponse = dbQuery {
+    override suspend fun createPayment(
+        employeeId: UUID,
+        payment: SupplierPaymentRequest
+    ): SupplierPaymentResponse = dbQuery {
         val order = PurchaseOrder.findById(payment.orderId)
-            ?: throw NotFoundException("Booking with id ${payment.orderId} does not exist")
-        var amount = BigDecimal.ZERO
+            ?: throw NotFoundException("Order with id ${payment.orderId} does not exist")
+        val amount = order.totalAmount
         val supplierPayment = SupplierPayment.new {
-            this.employee = Employee[payment.employeeId]
+            this.employee = Employee[employeeId]
             this.orderId = order
             this.amount = amount
             this.paymentMethod = payment.method
-            this.refNumber = refNumber
-            this.paymentStatus = PaymentStatus.PENDING
+            this.refNumber = generateRandomString(4).prependIndent("TR-")
+            this.paymentStatus = PaymentStatus.CONFIRMED
         }
-        /*if (PaymentStatus.CONFIRMED == true) {
-            amount += booking.totalAmount
-            supplierPayment.amount = amount
-        }*/
+        order.paid = true
+        order.orderStatus = OrderStatus.COMPLETED
         return@dbQuery supplierPayment.toSupplierPaymentResponse()
     }
 
-    override suspend fun updateSupplierPayment(id: UUID, payment: SupplierPaymentRequest): Boolean = dbQuery {
+    override suspend fun updateSupplierPayment(
+        id: UUID,
+        employeeId: UUID,
+        payment: SupplierPaymentRequest
+    ): Boolean = dbQuery {
         val order = PurchaseOrder.findById(payment.orderId)
-            ?: throw NotFoundException("Booking with id ${payment.orderId} does not exist")
-        var amount = BigDecimal.ZERO
-        val paymentExists = SupplierPaymentTable.selectAll().where { SupplierPaymentTable.id eq id }.count() > 0
+            ?: throw NotFoundException("Order with id ${payment.orderId} does not exist")
+        val paymentExists = SupplierPaymentTable
+            .selectAll()
+            .where { SupplierPaymentTable.id eq id }
+            .count() > 0
         if (!paymentExists) {
             throw IllegalArgumentException("payment with id $id does not exist")
         }
         SupplierPayment.findByIdAndUpdate(id) { update ->
-            update.employee = Employee[payment.employeeId]
+            update.employee = Employee[employeeId]
             update.orderId = order
-            update.amount = amount
+            update.amount = order.totalAmount
             update.paymentMethod = payment.method
             update.refNumber = generateRandomString(15)
-            update.paymentStatus = PaymentStatus.PENDING
+            update.paymentStatus = PaymentStatus.CONFIRMED
         }
         return@dbQuery true
     }
 
-    override suspend fun updatePaymentStatus(paymentId: UUID, paymentStatus: PaymentUpdateStatus): Boolean = dbQuery {
+    override suspend fun updatePaymentStatus(
+        paymentId: UUID,
+        paymentStatus: PaymentUpdateStatus
+    ): Boolean = dbQuery {
         SupplierPayment.findByIdAndUpdate(paymentId) { statusUpdate ->
             statusUpdate.paymentStatus = paymentStatus.status
         }
         return@dbQuery true
     }
 
-    override suspend fun filteredSupplierPayment(filter: (SupplierPayment) -> Boolean): List<SupplierPaymentResponse> =
+    override suspend fun filteredSupplierPayment(
+        filter: (SupplierPayment) -> Boolean
+    ): List<SupplierPaymentResponse> =
         dbQuery {
             return@dbQuery SupplierPayment.all()
-                .limit(20, 4)
                 .filter(filter)
                 .sortedByDescending { it.createdAt.coerceAtLeast(it.updatedAt) }
                 .map { it.toSupplierPaymentResponse() }

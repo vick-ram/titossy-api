@@ -90,15 +90,16 @@ class SupplierPayment(id: EntityID<UUID>) : CustomUUIDEntity(id, SupplierPayment
     var refNumber by SupplierPaymentTable.paymentRefNumber
 
     fun toSupplierPaymentResponse() = SupplierPaymentResponse(
-        id.value,
-        employee.id.value,
-        orderId.id.value,
-        createdAt,
-        amount,
-        paymentMethod,
-        refNumber,
-        paymentStatus,
-        updatedAt
+        paymentId = id.value,
+        employee = employee.fullName,
+        orderId = orderId.id.value,
+        supplier = orderId.supplier.fullName,
+        paymentDate = createdAt,
+        amount = amount,
+        method = paymentMethod,
+        paymentReference = refNumber,
+        status = paymentStatus,
+        updatedAt = updatedAt
     )
 }
 

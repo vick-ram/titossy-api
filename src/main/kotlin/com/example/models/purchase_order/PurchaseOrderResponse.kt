@@ -18,6 +18,7 @@ data class PurchaseOrderResponse(
     val purchaseOrderItems: MutableList<PurchaseOrderItemResponse>? = null,
     @Serializable(with = BigDecimalSerializer::class)
     val totalAmount: BigDecimal,
+    val paid: Boolean,
     val orderStatus: OrderStatus,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime,
