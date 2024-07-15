@@ -86,7 +86,9 @@ class SupplierPaymentRepositoryImpl : SupplierPaymentRepository {
         val paymentExists = SupplierPaymentTable.selectAll()
             .where { SupplierPaymentTable.id eq paymentId }.count() > 0
         if (!paymentExists) {
-            throw IllegalArgumentException("Payment with id $paymentId does not exist")
+            throw IllegalArgumentException(
+                "Payment with id $paymentId does not exist"
+            )
         }
         SupplierPayment.findById(paymentId)?.delete()
         return@dbQuery true
