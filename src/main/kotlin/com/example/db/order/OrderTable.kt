@@ -19,8 +19,16 @@ import org.jetbrains.exposed.sql.javatime.date
 import java.time.LocalDate
 
 object PurchaseOrders : CustomStringTable("purchase_orders") {
-    val employee = reference("employee_id", EmployeeTable, onDelete = ReferenceOption.CASCADE)
-    val supplier = reference("supplier_id", SupplierTable, onDelete = ReferenceOption.CASCADE)
+    val employee = reference(
+        "employee_id",
+        EmployeeTable,
+        onDelete = ReferenceOption.CASCADE
+    )
+    val supplier = reference(
+        "supplier_id",
+        SupplierTable,
+        onDelete = ReferenceOption.CASCADE
+    )
     val expectedDate = date("expected_date").clientDefault { LocalDate.now() }
     val totalAmount = decimal("total_amount", 10, 2)
     val paid = bool("paid").default(false)
@@ -33,8 +41,16 @@ object PurchaseOrders : CustomStringTable("purchase_orders") {
 }
 
 object PurchaseOrderItems : CustomStringTable("purchase_order_items") {
-    val order = reference("order", PurchaseOrders, onDelete = ReferenceOption.CASCADE)
-    val product = reference("product_id", ProductTable, onDelete = ReferenceOption.CASCADE)
+    val order = reference(
+        "order",
+        PurchaseOrders,
+        onDelete = ReferenceOption.CASCADE
+    )
+    val product = reference(
+        "product_id",
+        ProductTable,
+        onDelete = ReferenceOption.CASCADE
+    )
     val quantity = integer("quantity")
     val unitPrice = decimal("price", 10, 2)
     val subtotal = decimal("sub_total", 10, 2)
@@ -57,7 +73,9 @@ class PurchaseOrder(id: EntityID<String>) : CustomStringEntity(id, PurchaseOrder
         employee = employee.fullName,
         supplier = supplier.fullName,
         expectedDate = expectedDate,
-        purchaseOrderItems = purchaseOrderItems.map { it.toPurchaseOrderItemResponse() }.toMutableList(),
+        purchaseOrderItems = purchaseOrderItems.map {
+            it.toPurchaseOrderItemResponse()
+        }.toMutableList(),
         totalAmount = this.totalAmount,
         paid = paid,
         orderStatus = orderStatus,
