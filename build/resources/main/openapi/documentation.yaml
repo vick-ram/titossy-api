@@ -1,0 +1,2541 @@
+openapi: "3.0.3"
+info:
+  title: "ktor_server API"
+  description: "ktor_server API"
+  version: "1.0.0"
+servers:
+  - url: "http://127.0.0.1:8080"
+paths:
+  /{id}/orderItem/{id}:
+    delete:
+      description: "Delete an order item"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+              examples:
+                Example#1:
+                  value: "Invalid id"
+    put:
+      description: "Endpoints for adding order items <br> Update an order item"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderItemRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Failed to update order item"
+                Example#2:
+                  value: "Invalid id"
+  /address:
+    get:
+      description: "Retrieves addresses associated with a customer and responds with\
+        \ the list of addresses. <br> The Address containing the ID of the customer."
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    post:
+      description: ""
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /address/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    get:
+      description: ""
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    put:
+      description: ""
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/booking:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Response_List<? extends BookingResponse>"
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/booking/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    get:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    patch:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/booking/date/{date}:
+    get:
+      description: ""
+      parameters:
+        - name: "date"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/booking/status/{status}:
+    get:
+      description: ""
+      parameters:
+        - name: "status"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Response_List<? extends BookingResponse>"
+  /api/customer:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    patch:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/customer/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    get:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    patch:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    put:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/customer/auth/sign_in:
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/customer/auth/sign_out:
+    post:
+      description: ""
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: false
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/customer/auth/sign_up:
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/employee:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+  /api/employee/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    get:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    put:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/employee/auth/sign_in:
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/employee/auth/sign_out:
+    post:
+      description: ""
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: false
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/employee/auth/sign_up:
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/employee/role/{role}:
+    get:
+      description: ""
+      parameters:
+        - name: "role"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/feedback:
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/feedback/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    get:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/order:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+              examples:
+                Example#1:
+                  value: "Failed to get orders"
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Failed to create order"
+  /api/order/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "boolean"
+    get:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Order not found"
+    put:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Failed to update order status"
+  /api/order/date/{date}:
+    get:
+      description: ""
+      parameters:
+        - name: "date"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/OrderResponse"
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "No orders found for the given date"
+  /api/payment:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Nothing"
+  /api/product:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/product/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+    put:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/service:
+    get:
+      description: ""
+      parameters:
+        - name: "search"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    post:
+      description: ""
+      parameters:
+        - name: "search"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/service/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "search"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+              examples:
+                Example#1:
+                  value: ""
+    get:
+      description: ""
+      parameters:
+        - name: "search"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: "Service not found"
+  /api/service/category:
+    get:
+      description: ""
+      parameters:
+        - name: "search"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+        - name: "name"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+              examples:
+                Example#1:
+                  value: "No services found"
+  /api/supplier:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/supplier/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Supplier deleted successfully"
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Supplier not found"
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+    get:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Supplier not found"
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+    patch:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Supplier not found"
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+    put:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Supplier not found"
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+  /api/supplier/approve_all:
+    patch:
+      description: "update all supplier statuses"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "All suppliers updated successfully"
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+  /api/supplier/auth/sign_in:
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/supplier/auth/sign_out:
+    post:
+      description: ""
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: false
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /api/supplier/auth/sign_up:
+    post:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /booking/{bookingId}:
+    get:
+      description: ""
+      parameters:
+        - name: "bookingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Invalid booking id"
+  /cart:
+    get:
+      description: ""
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Response_List<? extends ServiceCartResponse>"
+    post:
+      description: ""
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /cart/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+    patch:
+      description: ""
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /cart/remove/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: { }
+  /customer/{customerId}:
+    get:
+      description: ""
+      parameters:
+        - name: "customerId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/FeedbackResponse"
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Invalid customer id"
+  /customer/booking/{id}:
+    get:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+              examples:
+                Example#1:
+                  value: "No payments found"
+                Example#2:
+                  value: "Invalid ID"
+  /employee/{id}:
+    get:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+              examples:
+                Example#1:
+                  value: "Failed to get orders"
+                Example#2:
+                  value: "Invalid id"
+  /mock/course:
+    post:
+      description: ""
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseRequest"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Course created"
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+    put:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: "Missing or malformed id"
+            '*/*':
+              schema: { }
+  /mock/course/{id}:
+    delete:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: "Missing or malformed id"
+            '*/*':
+              schema:
+                type: "boolean"
+    get:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: ""
+                Example#3:
+                  value: "Missing or malformed id"
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CourseModel"
+  /mock/courses:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/CourseModel"
+  /mock/courses/{professorId}:
+    get:
+      description: ""
+      parameters:
+        - name: "professorId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: "Missing or malformed professorId"
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/CourseModel"
+  /mock/professor:
+    post:
+      description: "Create endpoints"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfessorRequest"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Professor created"
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+  /mock/professor/{id}:
+    delete:
+      description: "Delete endpoints"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: "Missing or malformed id"
+            '*/*':
+              schema:
+                type: "boolean"
+    get:
+      description: "Read endpoints"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: ""
+                Example#3:
+                  value: "Missing or malformed id"
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProfessorModel"
+    put:
+      description: "Update endpoints"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfessorRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: "Missing or malformed id"
+            '*/*':
+              schema: { }
+  /mock/professor/{professorId}/course/{courseId}:
+    delete:
+      description: ""
+      parameters:
+        - name: "professorId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+        - name: "courseId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: "Missing or malformed courseId"
+                Example#3:
+                  value: "Missing or malformed professorId"
+            '*/*':
+              schema:
+                type: "boolean"
+    post:
+      description: ""
+      parameters:
+        - name: "professorId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+        - name: "courseId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: "Missing or malformed courseId"
+                Example#3:
+                  value: "Missing or malformed professorId"
+            '*/*':
+              schema: { }
+        "201":
+          description: "Created"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Course added to professor"
+  /mock/professors:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/ProfessorModel"
+  /mock/professors/{courseId}:
+    get:
+      description: ""
+      parameters:
+        - name: "courseId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: ""
+                Example#2:
+                  value: "Missing or malformed courseId"
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/ProfessorModel"
+  /payment:
+    post:
+      description: "delete(\"/customer/{id}\") {\n        val id = call.parameters[\"\
+        id\"]?.toIntOrNull() ?: return@delete call.respond(\"Invalid ID\")\n     \
+        \   val customerPayment = cancelPayment(id)\n        customerPayment.let {\n\
+        \            call.respond(it)\n        }\n    }"
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Payment failed"
+                Example#2:
+                  value: "Payment not made"
+  /payment/{id}:
+    put:
+      description: ""
+      parameters:
+        - name: "parent"
+          in: "query"
+          required: true
+          schema:
+            type: "object"
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "object"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Payment not found"
+  /search:
+    get:
+      description: ""
+      parameters:
+        - name: "query"
+          in: "query"
+          required: false
+          schema:
+            type: "string"
+      responses:
+        "400":
+          description: "Bad Request"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Invalid query"
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/ProductResponse"
+  /status/{status}:
+    get:
+      description: ""
+      parameters:
+        - name: "status"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+              examples:
+                Example#1:
+                  value: "Failed to get orders"
+                Example#2:
+                  value: "Invalid status"
+  /supplier/{id}:
+    get:
+      description: ""
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+              examples:
+                Example#1:
+                  value: "Failed to get orders"
+                Example#2:
+                  value: "Invalid id"
+components:
+  schemas:
+    Response:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+    Response_Map<String, ? extends List<? extends String>>:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "string"
+        error:
+          type: "string"
+    Response_String:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "string"
+        error:
+          type: "string"
+    OrderItemRequest:
+      type: "object"
+      properties:
+        orderId:
+          type: "string"
+          format: "uuid"
+        productId:
+          type: "string"
+          format: "uuid"
+        quantity:
+          type: "integer"
+          format: "int32"
+      required:
+        - "orderId"
+        - "productId"
+    OrderItemResponse:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        orderId:
+          type: "string"
+          format: "uuid"
+        productId:
+          type: "string"
+          format: "uuid"
+        quantity:
+          type: "integer"
+          format: "int32"
+        subtotal:
+          type: "number"
+          format: "double"
+      required:
+        - "id"
+        - "orderId"
+        - "productId"
+    CustomerAddressResponse:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        street:
+          type: "string"
+        city:
+          type: "string"
+        state:
+          type: "string"
+        zip:
+          type: "string"
+        customerId:
+          type: "string"
+          format: "uuid"
+      required:
+        - "id"
+        - "street"
+        - "city"
+        - "state"
+        - "zip"
+        - "customerId"
+    Response_List<? extends CustomerAddressResponse>:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/CustomerAddressResponse"
+        error:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/CustomerAddressResponse"
+    Response_CustomerAddressResponse:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          $ref: "#/components/schemas/CustomerAddressResponse"
+        error:
+          $ref: "#/components/schemas/CustomerAddressResponse"
+    BookingItemResponse:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        service:
+          type: "string"
+        quantity:
+          type: "integer"
+          format: "int32"
+        price:
+          type: "number"
+          format: "double"
+      required:
+        - "service"
+    BookingResponse:
+      type: "object"
+      properties:
+        bookingId:
+          type: "integer"
+          format: "int32"
+        bookingNumber:
+          type: "string"
+        customerId:
+          type: "string"
+          format: "uuid"
+        employeeId:
+          type: "string"
+          format: "uuid"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        bookingDate:
+          type: "string"
+          format: "date"
+        bookingTime:
+          type: "string"
+          format: "partial-time"
+        numberOfCleaners:
+          type: "integer"
+          format: "int32"
+        frequency:
+          type: "string"
+          enum:
+            - "DAILY"
+            - "WEEKLY"
+            - "BIWEEKLY"
+            - "MONTHLY"
+        services:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/BookingItemResponse"
+        totalAmount:
+          type: "number"
+          format: "double"
+        bookingStatus:
+          type: "string"
+          enum:
+            - "PENDING"
+            - "IN_PROGRESS"
+            - "CANCELLED"
+            - "COMPLETED"
+      required:
+        - "bookingNumber"
+        - "customerId"
+        - "employeeId"
+        - "createdAt"
+        - "bookingDate"
+        - "bookingTime"
+        - "frequency"
+        - "bookingStatus"
+    Response_List<? extends BookingResponse>:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/BookingResponse"
+        error:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/BookingResponse"
+    Response_BookingResponse:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          $ref: "#/components/schemas/BookingResponse"
+        error:
+          $ref: "#/components/schemas/BookingResponse"
+    Response_Boolean:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "boolean"
+        error:
+          type: "boolean"
+    CustomerResponse:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        username:
+          type: "string"
+        firstName:
+          type: "string"
+        lastName:
+          type: "string"
+        phone:
+          type: "string"
+        address:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/CustomerAddressResponse"
+        gender:
+          type: "string"
+          enum:
+            - "MALE"
+            - "FEMALE"
+            - "OTHER"
+            - "NOT_SPECIFIED"
+        email:
+          type: "string"
+        password:
+          type: "string"
+        status:
+          type: "string"
+          enum:
+            - "PENDING"
+            - "APPROVED"
+            - "REJECTED"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        updatedAt:
+          type: "string"
+          format: "date-time"
+      required:
+        - "id"
+        - "username"
+        - "firstName"
+        - "lastName"
+        - "phone"
+        - "gender"
+        - "email"
+        - "password"
+        - "status"
+        - "createdAt"
+        - "updatedAt"
+    Response_List<? extends CustomerResponse>:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/CustomerResponse"
+        error:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/CustomerResponse"
+    Unit:
+      type: "object"
+      properties: { }
+    Response_Unit:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          $ref: "#/components/schemas/Unit"
+        error:
+          $ref: "#/components/schemas/Unit"
+    Response_CustomerResponse:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          $ref: "#/components/schemas/CustomerResponse"
+        error:
+          $ref: "#/components/schemas/CustomerResponse"
+    Object:
+      type: "object"
+      properties: { }
+    ResultRow:
+      type: "object"
+      properties:
+        fieldIndex:
+          type: "object"
+      required:
+        - "fieldIndex"
+    Customer:
+      type: "object"
+      properties:
+        writeValues:
+          $ref: "#/components/schemas/Object"
+        _readValues:
+          $ref: "#/components/schemas/ResultRow"
+      required:
+        - "id"
+        - "writeValues"
+    Response_Customer:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          $ref: "#/components/schemas/Customer"
+        error:
+          $ref: "#/components/schemas/Customer"
+    EmployeeResponse:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        username:
+          type: "string"
+        firstName:
+          type: "string"
+        lastName:
+          type: "string"
+        gender:
+          type: "string"
+          enum:
+            - "MALE"
+            - "FEMALE"
+            - "OTHER"
+            - "NOT_SPECIFIED"
+        email:
+          type: "string"
+        password:
+          type: "string"
+        phone:
+          type: "string"
+        role:
+          type: "string"
+          enum:
+            - "ADMIN"
+            - "MANAGER"
+            - "INVENTORY"
+            - "FINANCE"
+            - "SUPERVISOR"
+            - "CLEANER"
+        availability:
+          type: "string"
+          enum:
+            - "AVAILABLE"
+            - "UNAVAILABLE"
+            - "ON_LEAVE"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        updatedAt:
+          type: "string"
+          format: "date-time"
+      required:
+        - "id"
+        - "username"
+        - "firstName"
+        - "lastName"
+        - "gender"
+        - "email"
+        - "password"
+        - "phone"
+        - "role"
+        - "createdAt"
+        - "updatedAt"
+    Response_List<? extends EmployeeResponse>:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmployeeResponse"
+        error:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/EmployeeResponse"
+    Response_EmployeeResponse:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          $ref: "#/components/schemas/EmployeeResponse"
+        error:
+          $ref: "#/components/schemas/EmployeeResponse"
+    FeedbackResponse:
+      type: "object"
+      properties:
+        feedbackId:
+          type: "integer"
+          format: "int32"
+        customerId:
+          type: "string"
+          format: "uuid"
+        bookingId:
+          type: "integer"
+          format: "int32"
+        feedback:
+          type: "string"
+        rating:
+          type: "number"
+          format: "double"
+        date:
+          type: "string"
+          format: "date-time"
+      required:
+        - "feedback"
+        - "date"
+    Response_FeedbackResponse:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          $ref: "#/components/schemas/FeedbackResponse"
+        error:
+          $ref: "#/components/schemas/FeedbackResponse"
+    OrderResponse:
+      type: "object"
+      properties:
+        oderId:
+          type: "string"
+          format: "uuid"
+        employeeId:
+          type: "string"
+          format: "uuid"
+        supplierId:
+          type: "string"
+          format: "uuid"
+        orderDate:
+          type: "string"
+          format: "date-time"
+        orderItems:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OrderItemResponse"
+        total:
+          type: "number"
+          format: "double"
+        orderStatus:
+          type: "string"
+          enum:
+            - "PENDING"
+            - "PROCESSING"
+            - "SHIPPED"
+            - "DELIVERED"
+            - "CANCELLED"
+      required:
+        - "oderId"
+        - "employeeId"
+        - "supplierId"
+        - "orderDate"
+        - "orderItems"
+        - "orderStatus"
+    Response_Double:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "number"
+          format: "double"
+        error:
+          type: "number"
+          format: "double"
+    ProductResponse:
+      type: "object"
+      properties:
+        productId:
+          type: "string"
+          format: "uuid"
+        name:
+          type: "string"
+        description:
+          type: "string"
+        price:
+          type: "number"
+          format: "double"
+        image:
+          type: "string"
+        orders:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/OrderItemResponse"
+      required:
+        - "productId"
+        - "name"
+        - "description"
+    Response_List<? extends ProductResponse>:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ProductResponse"
+        error:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ProductResponse"
+    Response_ProductResponse:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          $ref: "#/components/schemas/ProductResponse"
+        error:
+          $ref: "#/components/schemas/ProductResponse"
+    CategoryResponse:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        name:
+          type: "string"
+      required:
+        - "id"
+        - "name"
+    ServiceResponse:
+      type: "object"
+      properties:
+        serviceId:
+          type: "string"
+          format: "uuid"
+        serviceName:
+          type: "string"
+        category:
+          $ref: "#/components/schemas/CategoryResponse"
+        description:
+          type: "string"
+        price:
+          type: "number"
+          format: "double"
+        imageUrl:
+          type: "string"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        updatedAt:
+          type: "string"
+          format: "date-time"
+      required:
+        - "serviceId"
+        - "serviceName"
+        - "category"
+        - "description"
+        - "createdAt"
+        - "updatedAt"
+    Response_List<? extends ServiceResponse>:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ServiceResponse"
+        error:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ServiceResponse"
+    SupplierAddressResponse:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        street:
+          type: "string"
+        city:
+          type: "string"
+        state:
+          type: "string"
+        zip:
+          type: "string"
+      required:
+        - "id"
+        - "street"
+        - "city"
+        - "state"
+        - "zip"
+    SupplierResponse:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        username:
+          type: "string"
+        firstName:
+          type: "string"
+        lastName:
+          type: "string"
+        phone:
+          type: "string"
+        company:
+          type: "string"
+        address:
+          $ref: "#/components/schemas/SupplierAddressResponse"
+        email:
+          type: "string"
+        password:
+          type: "string"
+        status:
+          type: "string"
+          enum:
+            - "PENDING"
+            - "APPROVED"
+            - "REJECTED"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        updatedAt:
+          type: "string"
+          format: "date-time"
+      required:
+        - "id"
+        - "username"
+        - "firstName"
+        - "lastName"
+        - "phone"
+        - "company"
+        - "address"
+        - "email"
+        - "password"
+        - "status"
+        - "createdAt"
+        - "updatedAt"
+    Response_List<? extends SupplierResponse>:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/SupplierResponse"
+        error:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/SupplierResponse"
+    Response_List<? extends FeedbackResponse>:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/FeedbackResponse"
+        error:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/FeedbackResponse"
+    ServiceCartResponse:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        customerId:
+          type: "string"
+          format: "uuid"
+        serviceId:
+          type: "string"
+          format: "uuid"
+        quantity:
+          type: "integer"
+          format: "int32"
+      required:
+        - "id"
+        - "customerId"
+        - "serviceId"
+    Response_List<? extends ServiceCartResponse>:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ServiceCartResponse"
+        error:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ServiceCartResponse"
+    CustomerPaymentResponse:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        bookingId:
+          type: "integer"
+          format: "int32"
+        date:
+          type: "string"
+          format: "date-time"
+        amount:
+          type: "number"
+          format: "double"
+        method:
+          type: "string"
+        phoneNumber:
+          type: "string"
+        refNumber:
+          type: "string"
+        status:
+          type: "string"
+          enum:
+            - "PENDING"
+            - "CONFIRMED"
+            - "REFUNDED"
+            - "CANCELLED"
+        updatedAt:
+          type: "string"
+          format: "date-time"
+      required:
+        - "date"
+        - "method"
+        - "phoneNumber"
+        - "status"
+        - "updatedAt"
+    CourseRequest:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        name:
+          type: "string"
+      required:
+        - "id"
+        - "name"
+    ProfessorModel:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        firstName:
+          type: "string"
+        lastName:
+          type: "string"
+        email:
+          type: "string"
+        password:
+          type: "string"
+        courses:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/CourseModel"
+      required:
+        - "id"
+        - "firstName"
+        - "lastName"
+        - "email"
+        - "password"
+        - "courses"
+    CourseModel:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        name:
+          type: "string"
+        professors:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ProfessorModel"
+      required:
+        - "id"
+        - "name"
+        - "professors"
+    ProfessorRequest:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        firstName:
+          type: "string"
+        lastName:
+          type: "string"
+        email:
+          type: "string"
+        password:
+          type: "string"
+      required:
+        - "id"
+        - "firstName"
+        - "lastName"
+        - "email"
+        - "password"
+    Response_CustomerPaymentResponse:
+      type: "object"
+      properties:
+        success:
+          type: "boolean"
+        statusCode:
+          type: "integer"
+          format: "int32"
+        data:
+          $ref: "#/components/schemas/CustomerPaymentResponse"
+        error:
+          $ref: "#/components/schemas/CustomerPaymentResponse"
+    SupplierPaymentResponse:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        employeeId:
+          type: "string"
+          format: "uuid"
+        orderId:
+          type: "string"
+          format: "uuid"
+        date:
+          type: "string"
+          format: "date-time"
+        amount:
+          type: "number"
+          format: "double"
+        method:
+          type: "string"
+          enum:
+            - "CASH"
+            - "MOBILE"
+            - "CARD"
+        status:
+          type: "string"
+          enum:
+            - "PENDING"
+            - "CONFIRMED"
+            - "REFUNDED"
+            - "CANCELLED"
+        updatedAt:
+          type: "string"
+          format: "date-time"
+      required:
+        - "id"
+        - "employeeId"
+        - "orderId"
+        - "date"
+        - "method"
+        - "status"
+        - "updatedAt"
