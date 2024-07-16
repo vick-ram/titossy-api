@@ -4,7 +4,6 @@ import com.example.commands.queries.employee.*
 import com.example.exceptions.*
 import com.example.models.employee.*
 import com.example.routing.util.Employee
-import com.example.routing.withRole
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -14,14 +13,18 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import javax.security.auth.login.FailedLoginException
 
-fun Route.employeeRoutes() {
+fun Route.employeeRoutes(
+    secret: String,
+    issuer: String,
+    audience: String
+) {
     post<Employee.Auth.SignUp, EmployeeRequest> { _, employeeRequest ->
         val employee = employeeRequest.validate()
         try {
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.Created,
-                    createEmployee(employee),
+                    createEmployee(employee, secret),
                     "Employee created successfully"
                 )
             )
@@ -41,7 +44,7 @@ fun Route.employeeRoutes() {
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.OK,
-                    signInEmployee(employee),
+                    signInEmployee(employee, secret, issuer, audience),
                     "Signed in successfully"
                 )
             )
@@ -199,7 +202,7 @@ fun Route.employeeRoutes() {
         put<Employee.Id, EmployeeRequest> { param, employeeUpdate ->
             val employee = employeeUpdate.validate()
             try {
-                updateEmployee(param.id, employee)
+                updateEmployee(param.id, employee, secret)
                 call.respond(
                     ApiResponse.success(
                         HttpStatusCode.OK,

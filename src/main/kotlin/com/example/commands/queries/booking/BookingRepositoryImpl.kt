@@ -150,20 +150,3 @@ class BookingRepositoryImpl : BookingRepository {
         return@dbQuery true
     }
 }
-
-fun startScheduleBookingUpdate() = GlobalScope.launch {
-    while (isActive) {
-        try {
-            dbQuery {
-                Booking.find {
-                    Bookings.bookingDateTime.less(LocalDateTime.now()) and Bookings.bookingStatus.eq(BookingStatus.PENDING)
-                }.forEach { booking ->
-                    booking.bookingStatus = BookingStatus.CANCELLED
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        delay(24 * 60 * 60 * 1000)
-    }
-}

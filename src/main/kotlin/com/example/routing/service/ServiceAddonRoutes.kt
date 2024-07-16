@@ -18,7 +18,11 @@ import java.io.File
 import java.math.BigDecimal
 import java.util.*
 
-fun Route.serviceAddonRoutes(client: HttpClient) {
+fun Route.serviceAddonRoutes(
+    client: HttpClient,
+    apiKey: String,
+    url: String
+) {
     val dao: ServiceAddOnRepository = ServiceAddonRepositoryImpl()
 
     post(SERVICE_ADDON) {
@@ -52,7 +56,7 @@ fun Route.serviceAddonRoutes(client: HttpClient) {
                             stream.copyTo(it)
                         }
                     }
-                    imageUrl = uploadImageToHippo(file, client)
+                    imageUrl = uploadImageToHippo(file, client, apiKey, url)
                     file.delete()
                 }
 

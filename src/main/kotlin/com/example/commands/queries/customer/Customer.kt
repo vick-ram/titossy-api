@@ -1,8 +1,5 @@
 package com.example.commands.queries.customer
 
-import com.example.auth.Config.AUDIENCE
-import com.example.auth.Config.ISSUER
-import com.example.auth.Config.SECRET
 import com.example.auth.JwtPayload
 import com.example.auth.TokenBlackList
 import com.example.auth.generateTokens
@@ -24,7 +21,10 @@ import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
 import java.util.*
 
-suspend fun createCustomer(customerRequest: CustomerRequest): CustomerResponse = dbQuery {
+suspend fun createCustomer(
+    customerRequest: CustomerRequest,
+    secret: String
+): CustomerResponse = dbQuery {
     val existingCustomer = CustomerTable
         .selectAll().where { CustomerTable.email eq customerRequest.email }.count() > 0
     if (existingCustomer) {
@@ -35,7 +35,7 @@ suspend fun createCustomer(customerRequest: CustomerRequest): CustomerResponse =
         this.fullName = "${customerRequest.firstName} ${customerRequest.lastName}"
         this.phone = customerRequest.phone
         this.email = customerRequest.email
-        this.password = hashedPassword(customerRequest.password)
+        this.password = hashedPassword(customerRequest.password, secret)
         this.status = ApprovalStatus.PENDING
         this.createdAt = LocalDateTime.now()
         this.updatedAt = LocalDateTime.now()
@@ -43,7 +43,12 @@ suspend fun createCustomer(customerRequest: CustomerRequest): CustomerResponse =
     }.toCustomerResponse()
 }
 
-suspend fun signInCustomer(customerSignInData: CustomerSignInData): String = dbQuery {
+suspend fun signInCustomer(
+    customerSignInData: CustomerSignInData,
+    secret: String,
+    issuer: String,
+    audience: String
+): String = dbQuery {
     return@dbQuery try {
 
         val customer = when {
@@ -52,7 +57,7 @@ suspend fun signInCustomer(customerSignInData: CustomerSignInData): String = dbQ
             else -> null
         }?.singleOrNull()
 
-        if (customer != null && !comparePassword(customerSignInData.password, customer.password)) {
+        if (customer != null && !comparePassword(customerSignInData.password, customer.password, secret)) {
             throw InvalidCredentials("Wrong password provided for ${customer.email ?: customer.username}")
         }
 
@@ -63,9 +68,9 @@ suspend fun signInCustomer(customerSignInData: CustomerSignInData): String = dbQ
                     email = cust.email,
                     username = cust.username,
                     exp = Date(System.currentTimeMillis() + 31_536_000_000),
-                    iss = ISSUER,
-                    secret = SECRET,
-                    audience = AUDIENCE
+                    iss = issuer,
+                    secret = secret,
+                    audience = audience
                 )
             )
         } ?: throw NotFoundException("User with ${customerSignInData.email ?: customerSignInData.username} not found")
@@ -102,26 +107,27 @@ suspend fun updateCustomerStatus(id: UUID, statusUpdate: StatusUpdate): Customer
     }
 }
 
-suspend fun updateCustomer(id: UUID, customerUpdateRequest: CustomerRequest): CustomerResponse = dbQuery {
-    return@dbQuery try {
-        Customer.findByIdAndUpdate(id) { customerUpdate ->
-            customerUpdate.username = customerUpdateRequest.username
-            customerUpdate.fullName = "${customerUpdateRequest.firstName} ${customerUpdateRequest.lastName}"
-            customerUpdate.phone = customerUpdateRequest.phone
-            customerUpdate.email = customerUpdateRequest.email
-            customerUpdate.password = hashedPassword(customerUpdateRequest.password)
-            customerUpdate.updatedAt = LocalDateTime.now()
-        }?.toCustomerResponse()
-            ?: throw NotFoundException("No customer with $id id")
-    } catch (e: Exception) {
-        when (e) {
-            is ExposedSQLException -> throw e
-            is FailedToCreate -> throw FailedToCreate("Failed to update customer with $id id details")
-            else -> throw e
+suspend fun updateCustomer(id: UUID, customerUpdateRequest: CustomerRequest, secret: String): CustomerResponse =
+    dbQuery {
+        return@dbQuery try {
+            Customer.findByIdAndUpdate(id) { customerUpdate ->
+                customerUpdate.username = customerUpdateRequest.username
+                customerUpdate.fullName = "${customerUpdateRequest.firstName} ${customerUpdateRequest.lastName}"
+                customerUpdate.phone = customerUpdateRequest.phone
+                customerUpdate.email = customerUpdateRequest.email
+                customerUpdate.password = hashedPassword(customerUpdateRequest.password, secret)
+                customerUpdate.updatedAt = LocalDateTime.now()
+            }?.toCustomerResponse()
+                ?: throw NotFoundException("No customer with $id id")
+        } catch (e: Exception) {
+            when (e) {
+                is ExposedSQLException -> throw e
+                is FailedToCreate -> throw FailedToCreate("Failed to update customer with $id id details")
+                else -> throw e
+            }
         }
-    }
 
-}
+    }
 
 suspend fun deleteCustomer(id: UUID): Boolean = dbQuery {
     return@dbQuery try {

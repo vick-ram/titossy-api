@@ -19,7 +19,11 @@ import java.io.File
 import java.math.BigDecimal
 import java.util.UUID
 
-fun Route.productRoutes(client: HttpClient) {
+fun Route.productRoutes(
+    client: HttpClient,
+    apiKey: String,
+    url: String
+) {
 
     val productRepository: ProductRepository = ProductRepositoryImpl()
 
@@ -54,7 +58,7 @@ fun Route.productRoutes(client: HttpClient) {
                                 its.copyTo(it)
                             }
                         }
-                        image = uploadImageToHippo(file, client)
+                        image = uploadImageToHippo(file, client, apiKey, url)
                         file.delete()
                     }
                 }

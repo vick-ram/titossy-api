@@ -1,4 +1,0 @@
-#Key and value types
-#Wed Jun 12 08:16:45 EAT 2024
-keyType=java.util.UUID
-valueType=com.example.models.service.ServiceResponse

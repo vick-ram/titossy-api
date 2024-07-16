@@ -1,8 +1,5 @@
 package com.example.commands.queries.employee
 
-import com.example.auth.Config.AUDIENCE
-import com.example.auth.Config.ISSUER
-import com.example.auth.Config.SECRET
 import com.example.auth.JwtPayload
 import com.example.auth.TokenBlackList
 import com.example.auth.generateEmployeeTokens
@@ -21,7 +18,10 @@ import java.time.LocalDateTime
 import java.util.*
 import javax.security.auth.login.FailedLoginException
 
-suspend fun createEmployee(employeeRequest: EmployeeRequest) = dbQuery {
+suspend fun createEmployee(
+    employeeRequest: EmployeeRequest,
+    secret: String
+) = dbQuery {
     val existingEmployee =
         EmployeeTable
             .selectAll().where { EmployeeTable.email eq employeeRequest.email }
@@ -35,7 +35,7 @@ suspend fun createEmployee(employeeRequest: EmployeeRequest) = dbQuery {
             fullName = "${employeeRequest.firstName} ${employeeRequest.lastName}"
             this.gender = employeeRequest.gender
             this.email = employeeRequest.email
-            this.password = hashedPassword(employeeRequest.password)
+            this.password = hashedPassword(employeeRequest.password, secret)
             this.phone = employeeRequest.phone
             this.role = employeeRequest.role
             this.availability = Availability.AVAILABLE
@@ -49,7 +49,12 @@ suspend fun createEmployee(employeeRequest: EmployeeRequest) = dbQuery {
     }
 }
 
-suspend fun signInEmployee(employeeCredentials: EmployeeCredentials): String = dbQuery {
+suspend fun signInEmployee(
+    employeeCredentials: EmployeeCredentials,
+    secret: String,
+    issuer: String,
+    audience: String
+): String = dbQuery {
     return@dbQuery try {
 
         val employee = when {
@@ -58,7 +63,7 @@ suspend fun signInEmployee(employeeCredentials: EmployeeCredentials): String = d
             else -> null
         }?.singleOrNull()
 
-        if (employee != null && !comparePassword(employeeCredentials.password, employee.password)) {
+        if (employee != null && !comparePassword(employeeCredentials.password, employee.password, secret)) {
             throw InvalidCredentials("Invalid credentials")
         }
 
@@ -70,9 +75,9 @@ suspend fun signInEmployee(employeeCredentials: EmployeeCredentials): String = d
                     username = empl.username,
                     role = empl.role.name,
                     exp = Date(System.currentTimeMillis() + 31_536_000_000),
-                    iss = ISSUER,
-                    secret = SECRET,
-                    audience = AUDIENCE
+                    iss = issuer,
+                    secret = secret,
+                    audience = audience
                 )
             )
         } ?: throw NotFoundException("User not found")
@@ -112,14 +117,14 @@ suspend fun updateEmployeeAvailability(id: UUID, availability: UpdateEmployeeAva
     }
 }
 
-suspend fun updateEmployee(id: UUID, employeeUpdateRequest: EmployeeRequest) = dbQuery {
+suspend fun updateEmployee(id: UUID, employeeUpdateRequest: EmployeeRequest, secret: String) = dbQuery {
     return@dbQuery try {
         Employee.findByIdAndUpdate(id) { empl ->
             empl.username = employeeUpdateRequest.username
             empl.fullName = "${employeeUpdateRequest.firstName} ${employeeUpdateRequest.lastName}"
             empl.gender = employeeUpdateRequest.gender
             empl.email = employeeUpdateRequest.email
-            empl.password = hashedPassword(employeeUpdateRequest.password)
+            empl.password = hashedPassword(employeeUpdateRequest.password, secret)
             empl.phone = employeeUpdateRequest.phone
             empl.role = employeeUpdateRequest.role
             empl.availability = employeeUpdateRequest.availability

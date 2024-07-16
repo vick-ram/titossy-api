@@ -17,14 +17,18 @@ import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.supplierRoutes() {
+fun Route.supplierRoutes(
+    secret: String,
+    issuer: String,
+    audience: String
+) {
     post<Supplier.Auth.SignUp, SupplierRequest> { _, supplierReq ->
         val supplier = supplierReq.validate()
         try {
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.Created,
-                    createSupplier(supplier),
+                    createSupplier(supplier, secret),
                     "Account created successfully"
                 )
             )
@@ -41,7 +45,7 @@ fun Route.supplierRoutes() {
     post<Supplier.Auth.SignIn, SupplierSignInData> { _, cred ->
         val supplier = cred.validate()
         try {
-            val tokens = signInSupplier(supplier)
+            val tokens = signInSupplier(supplier, secret, issuer, audience)
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.OK,
@@ -198,7 +202,7 @@ fun Route.supplierRoutes() {
     put<Supplier.Id, SupplierRequest> { param, supplierUpdate ->
         val supplierUpdateRequest = supplierUpdate.validate()
         try {
-            updateSupplier(param.id, supplierUpdateRequest)
+            updateSupplier(param.id, supplierUpdateRequest, secret)
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.OK,

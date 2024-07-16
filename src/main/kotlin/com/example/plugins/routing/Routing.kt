@@ -7,7 +7,6 @@ import com.example.routing.cart.serviceCartRoutes
 import com.example.routing.customer.customerRoutes
 import com.example.routing.employee.employeeRoutes
 import com.example.routing.feedback.feedbackRoutes
-import com.example.routing.images.imageRoutes
 import com.example.routing.order.orderRoutes
 import com.example.routing.payment.customerPaymentRoutes
 import com.example.routing.payment.supplierPaymentRoutes
@@ -19,26 +18,29 @@ import io.ktor.client.*
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 
-fun Application.configureRouting(client: HttpClient) {
+fun Application.configureRouting(
+    client: HttpClient,
+    apiKey: String,
+    url: String,
+    secret: String,
+    issuer: String,
+    audience: String
+) {
     routing {
-        employeeRoutes()
-        customerRoutes()
-        supplierRoutes()
+        employeeRoutes(secret, issuer, audience)
+        customerRoutes(secret, issuer, audience)
+        supplierRoutes(secret, issuer, audience)
         bookingRoute()
         assignBookingRoutes()
-        serviceRoutes(client)
-        serviceAddonRoutes(client)
-        productRoutes(client)
+        serviceRoutes(client, apiKey, url)
+        serviceAddonRoutes(client, apiKey, url)
+        productRoutes(client, apiKey, url)
         customerPaymentRoutes()
         supplierPaymentRoutes()
         orderRoutes()
         feedbackRoutes()
         serviceCartRoutes()
         productCartRoutes()
-        imageRoutes("/api/uploads/service", "uploads/service", "jpg", "jpeg", "png")
-        imageRoutes("/api/uploads/addon", "uploads/addon", "jpg", "jpeg", "png")
-        imageRoutes("/api/uploads/product", "uploads/product", "jpg", "jpeg", "png")
-        imageRoutes("/api/uploads/profile", "uploads/profile", "jpg", "jpeg", "png")
     }
 }
 

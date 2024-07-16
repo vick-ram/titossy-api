@@ -6,7 +6,6 @@ import com.example.plugins.cors.configurecORS
 import com.example.plugins.error.configureException
 import com.example.plugins.routing.configureRouting
 import com.example.plugins.serialization.configureSerialization
-import com.pusher.pushnotifications.PushNotifications
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
@@ -20,6 +19,19 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
+    val url = environment.config.property("storage.url").getString()
+    val driver = environment.config.property("storage.driver").getString()
+    val user = environment.config.property("storage.user").getString()
+    val password = environment.config.property("storage.password").getString()
+
+    val imgHippoApiKey = environment.config.property("imgHippo.apiKey").getString()
+    val imgHippoUrl = environment.config.property("imgHippo.url").getString()
+
+    val secret = environment.config.property("jwt.secret").getString()
+    val issuer = environment.config.property("jwt.issuer").getString()
+    val audience = environment.config.property("jwt.audience").getString()
+    val realm = environment.config.property("jwt.realm").getString()
+
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()
@@ -31,11 +43,15 @@ fun Application.module() {
             agent = "Ktor-server-client"
         }
     }
-    DatabaseUtil.init()
+    DatabaseUtil.init(url,driver, user, password)
     configureException()
     configureSerialization()
-    configureAuthentication()
+    configureAuthentication(
+        secret = secret,
+        issuer = issuer,
+        jwtRealm = realm
+    )
     install(Resources)
-    configureRouting(client)
+    configureRouting(client, imgHippoApiKey, imgHippoUrl, secret, issuer, audience)
     configurecORS()
 }

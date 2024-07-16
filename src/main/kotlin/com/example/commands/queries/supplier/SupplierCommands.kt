@@ -1,8 +1,5 @@
 package com.example.commands.queries.supplier
 
-import com.example.auth.Config.AUDIENCE
-import com.example.auth.Config.ISSUER
-import com.example.auth.Config.SECRET
 import com.example.auth.JwtPayload
 import com.example.auth.TokenBlackList
 import com.example.auth.generateTokens
@@ -26,7 +23,10 @@ import org.jetbrains.exposed.sql.selectAll
 import java.time.LocalDateTime
 import java.util.*
 
-suspend fun createSupplier(supplierRequest: SupplierRequest): SupplierResponse = dbQuery {
+suspend fun createSupplier(
+    supplierRequest: SupplierRequest,
+    secret: String,
+): SupplierResponse = dbQuery {
     val supplierExists = SupplierTable
         .selectAll()
         .where { SupplierTable.email eq supplierRequest.email }
@@ -39,7 +39,7 @@ suspend fun createSupplier(supplierRequest: SupplierRequest): SupplierResponse =
             this.phone = supplierRequest.phone
             this.address = supplierRequest.address
             this.email = supplierRequest.email
-            this.password = hashedPassword(supplierRequest.password)
+            this.password = hashedPassword(supplierRequest.password, secret)
             this.status = ApprovalStatus.PENDING
             this.createdAt = LocalDateTime.now()
             this.updatedAt = LocalDateTime.now()
@@ -48,11 +48,16 @@ suspend fun createSupplier(supplierRequest: SupplierRequest): SupplierResponse =
     }
 }
 
-suspend fun signInSupplier(credentials: SupplierSignInData): String = dbQuery {
+suspend fun signInSupplier(
+    credentials: SupplierSignInData,
+    secret: String,
+    issuer: String,
+     audience: String
+): String = dbQuery {
     return@dbQuery try {
         val supplier = Supplier.find { SupplierTable.email eq credentials.email }.singleOrNull()
 
-        if (supplier != null && !comparePassword(credentials.password, supplier.password)) {
+        if (supplier != null && !comparePassword(credentials.password, supplier.password, secret)) {
             throw InvalidCredentials("Wrong password provided for ${credentials.email}")
         }
 
@@ -64,9 +69,9 @@ suspend fun signInSupplier(credentials: SupplierSignInData): String = dbQuery {
                     email = cust.email,
                     username = null,
                     exp = Date(System.currentTimeMillis() + 31_536_000_000),
-                    iss = ISSUER,
-                    secret = SECRET,
-                    audience = AUDIENCE
+                    iss = issuer,
+                    secret = secret,
+                    audience = audience
                 )
             )
         } ?: throw NotFoundException("User with ${credentials.email} not found")
@@ -115,7 +120,10 @@ suspend fun updateAllSuppliersStatus(updateStatus: SupplierStatusUpdate) = dbQue
     }
 }
 
-suspend fun updateSupplier(id: UUID, supplierUpdateRequest: SupplierRequest): Boolean = dbQuery {
+suspend fun updateSupplier(
+    id: UUID, supplierUpdateRequest: SupplierRequest,
+    secret: String
+): Boolean = dbQuery {
     return@dbQuery try {
         Supplier.findById(id)
             ?.let {
@@ -123,7 +131,7 @@ suspend fun updateSupplier(id: UUID, supplierUpdateRequest: SupplierRequest): Bo
                 it.phone = supplierUpdateRequest.phone
                 it.address = supplierUpdateRequest.address
                 it.email = supplierUpdateRequest.email
-                it.password = hashedPassword(supplierUpdateRequest.password)
+                it.password = hashedPassword(supplierUpdateRequest.password, secret)
                 it.updatedAt = LocalDateTime.now()
             }
         true

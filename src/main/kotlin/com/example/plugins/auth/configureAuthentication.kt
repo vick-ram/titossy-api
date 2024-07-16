@@ -1,8 +1,5 @@
 package com.example.plugins.auth
 
-import com.example.auth.Config.ISSUER
-import com.example.auth.Config.REALM
-import com.example.auth.Config.SECRET
 import com.example.auth.makeJWTVerifier
 import com.example.commands.queries.customer.filteredCustomers
 import com.example.commands.queries.employee.filteredEmployees
@@ -21,11 +18,15 @@ import io.ktor.server.response.*
 
 val lastException = ThreadLocal<Throwable>()
 
-fun Application.configureAuthentication() {
+fun Application.configureAuthentication(
+    secret: String,
+    issuer: String,
+    jwtRealm: String
+) {
     install(Authentication) {
         jwt("auth-jwt") {
-            verifier(makeJWTVerifier(ISSUER, SECRET))
-            realm = REALM
+            verifier(makeJWTVerifier(issuer, secret))
+            realm = jwtRealm
 
             validate { credential ->
                 try {

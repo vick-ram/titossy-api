@@ -24,8 +24,13 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object DatabaseUtil {
-    fun init() {
-        Database.connect(hikari())
+    fun init(
+        url: String,
+        driver: String,
+        user: String,
+        password: String
+    ) {
+        Database.connect(hikari(url, driver, user, password))
         transaction {
             addLogger(StdOutSqlLogger)
             SchemaUtils.create(
@@ -285,6 +290,27 @@ object DatabaseUtil {
     }
 }
 
+fun hikari(
+    url: String,
+    driver: String,
+    user: String,
+    password: String
+): HikariDataSource {
+    val config = HikariConfig()
+        .apply {
+            this.jdbcUrl = url
+            this.driverClassName = driver
+            this.username = user
+            this.password = password
+            this.maximumPoolSize = 6
+            this.isAutoCommit = false
+            this.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+            validate()
+        }
+
+    return HikariDataSource(config)
+}
+/*
 fun hikari(): HikariDataSource {
     val config = HikariConfig()
         .apply {
@@ -302,4 +328,4 @@ fun hikari(): HikariDataSource {
         }
 
     return HikariDataSource(config)
-}
+}*/

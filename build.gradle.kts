@@ -8,13 +8,32 @@ val ehcache_version: String by project
 
 plugins {
     kotlin("jvm") version "2.0.0-RC1"
-    id("io.ktor.plugin") version "2.3.9"
+    id("io.ktor.plugin") version "2.3.12"
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
 }
 
 ktor {
     fatJar {
         archiveFileName = "titossy.jar"
+    }
+    docker {
+        jreVersion.set(JavaVersion.VERSION_21)
+        localImageName.set("titossy-image")
+        imageTag.set("latest")
+        portMappings.set(listOf(
+            io.ktor.plugin.features.DockerPortMapping(
+                80,
+                8080,
+                io.ktor.plugin.features.DockerPortMappingProtocol.TCP
+            )
+        ))
+        externalRegistry.set(
+            io.ktor.plugin.features.DockerImageRegistry.dockerHub(
+                appName = provider { "titossy" },
+                username = providers.environmentVariable("DOCKER_HUB_USERNAME"),
+                password = providers.environmentVariable("DOCKER_HUB_PASSWORD")
+            )
+        )
     }
 }
 

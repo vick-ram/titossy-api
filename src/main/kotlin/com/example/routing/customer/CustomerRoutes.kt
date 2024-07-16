@@ -15,11 +15,15 @@ import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.customerRoutes() {
+fun Route.customerRoutes(
+    secret: String,
+    issuer: String,
+    audience: String
+) {
     post<Customer.Auth.SignUp, CustomerRequest> { _, customerReg ->
         try {
             val customer = customerReg.validate()
-            val newCustomer = createCustomer(customer)
+            val newCustomer = createCustomer(customer, secret)
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.Created,
@@ -50,7 +54,7 @@ fun Route.customerRoutes() {
     post<Customer.Auth.SignIn, CustomerSignInData> { _, customerCred ->
         val customer = customerCred.validate()
         try {
-            val token = signInCustomer(customer)
+            val token = signInCustomer(customer, secret, issuer, audience)
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.OK,
@@ -198,7 +202,7 @@ fun Route.customerRoutes() {
     authenticate("auth-jwt") {
         put<Customer.Id, CustomerRequest> { param, customerUpdate ->
             try {
-                updateCustomer(param.id, customerUpdate.validate())
+                updateCustomer(param.id, customerUpdate.validate(), secret)
                 call.respond(
                     ApiResponse.success(
                         HttpStatusCode.OK,
