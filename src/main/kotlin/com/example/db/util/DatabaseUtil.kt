@@ -310,22 +310,3 @@ fun hikari(
 
     return HikariDataSource(config)
 }
-/*
-fun hikari(): HikariDataSource {
-    val config = HikariConfig()
-        .apply {
-            dataSourceClassName = "org.postgresql.ds.PGSimpleDataSource"
-            addDataSourceProperty("databaseName", "titossy-cleaning-services")
-            addDataSourceProperty("portNumber", 5432)
-            addDataSourceProperty("serverName", "localhost")
-            addDataSourceProperty("user", "postgres")
-            addDataSourceProperty("password", System.getenv("DB_PASSWORD") ?: "Vickram9038")
-
-            maximumPoolSize = 6
-            isAutoCommit = false
-            transactionIsolation = "TRANSACTION_REPEATABLE_READ"
-            validate()
-        }
-
-    return HikariDataSource(config)
-}*/
