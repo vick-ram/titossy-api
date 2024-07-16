@@ -26,19 +26,18 @@ suspend fun addProductToCart(employeeId: UUID, productCart: ProductCart): Boolea
     return@dbQuery true
 }
 
-suspend fun incrementProductInCart(productId: UUID, quantity: Int) = dbQuery {
-    val productExists = ProductCartEntity.find { (ProductCarts.product eq productId) }.singleOrNull()
-    productExists?.let {
-        productExists.quantity += quantity
-    }
+suspend fun getProductsInCart(
+    employeeId: UUID
+): List<ProductCartResponse> = dbQuery {
+    ProductCartEntity.find {
+        ProductCarts.employee eq employeeId
+    }.map { it.toProductCartResponse() }
 }
 
-suspend fun getProductsInCart(employeeId: UUID): List<ProductCartResponse> = dbQuery {
-    ProductCartEntity.find { ProductCarts.employee eq employeeId }
-        .map { it.toProductCartResponse() }
-}
-
-suspend fun removeProductFromCart(employeeId: UUID, productId: UUID): Boolean = dbQuery {
+suspend fun removeProductFromCart(
+    employeeId: UUID,
+    productId: UUID
+): Boolean = dbQuery {
     val product = ProductCartEntity.find {
         (ProductCarts.employee eq employeeId) and
                 (ProductCarts.product eq productId)

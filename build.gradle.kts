@@ -16,25 +16,6 @@ ktor {
     fatJar {
         archiveFileName = "titossy.jar"
     }
-    docker {
-        jreVersion.set(JavaVersion.VERSION_21)
-        localImageName.set("titossy-image")
-        imageTag.set("latest")
-        portMappings.set(listOf(
-            io.ktor.plugin.features.DockerPortMapping(
-                80,
-                8080,
-                io.ktor.plugin.features.DockerPortMappingProtocol.TCP
-            )
-        ))
-        externalRegistry.set(
-            io.ktor.plugin.features.DockerImageRegistry.dockerHub(
-                appName = provider { "titossy" },
-                username = providers.environmentVariable("DOCKER_HUB_USERNAME"),
-                password = providers.environmentVariable("DOCKER_HUB_PASSWORD")
-            )
-        )
-    }
 }
 
 group = "com.example"

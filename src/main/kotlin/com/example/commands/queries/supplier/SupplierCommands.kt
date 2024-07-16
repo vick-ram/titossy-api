@@ -61,7 +61,6 @@ suspend fun signInSupplier(
             throw InvalidCredentials("Wrong password provided for ${credentials.email}")
         }
 
-
         supplier?.let { cust ->
             generateTokens(
                 JwtPayload(

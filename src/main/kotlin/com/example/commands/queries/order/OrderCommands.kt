@@ -88,9 +88,6 @@ class PurchaseOrderRepositoryImpl : PurchaseOrderRepository {
             }
             orderToUpdate?.orderStatus = orderStatus.status
             orderToUpdate?.flush()
-            /*PurchaseOrder.findByIdAndUpdate(purchaseOrderId) { update ->
-                update.orderStatus = orderStatus.status
-            }*/
             return@dbQuery true
         }
 

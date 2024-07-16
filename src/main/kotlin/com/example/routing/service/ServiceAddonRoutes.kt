@@ -45,19 +45,13 @@ fun Route.serviceAddonRoutes(
                 }
 
                 is PartData.FileItem -> {
-
-                    val fileData = part.originalFileName
-                    val ext = fileData?.let { f ->
-                        File(f).extension
+                    if (part.name == "imageUrl") {
+                        val fileBytes = part.streamProvider().readBytes()
+                        val tempFile = File.createTempFile("upload-", part.originalFileName)
+                        tempFile.writeBytes(fileBytes)
+                        imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
+                        tempFile.delete()
                     }
-                    val file = File("uploads/addon/${UUID.randomUUID()}.$ext")
-                    part.streamProvider().use { stream ->
-                        file.outputStream().buffered().use {
-                            stream.copyTo(it)
-                        }
-                    }
-                    imageUrl = uploadImageToHippo(file, client, apiKey, url)
-                    file.delete()
                 }
 
                 else -> {}
@@ -136,8 +130,10 @@ fun Route.serviceAddonRoutes(
 
                 is PartData.FileItem -> {
                     val fileBytes = part.streamProvider().readBytes()
-                    deleteAddOnImage(fileBytes, part)
-                    imageUrl = storeAddonsImage(fileBytes, part)
+                    val tempFile = File.createTempFile("upload-", part.originalFileName)
+                    tempFile.writeBytes(fileBytes)
+                    imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
+                    tempFile.delete()
                 }
 
                 else -> {}

@@ -58,7 +58,7 @@ suspend fun signInCustomer(
         }?.singleOrNull()
 
         if (customer != null && !comparePassword(customerSignInData.password, customer.password, secret)) {
-            throw InvalidCredentials("Wrong password provided for ${customer.email ?: customer.username}")
+            throw InvalidCredentials("Wrong password provided for ${customer.email}")
         }
 
         customer?.let { cust ->

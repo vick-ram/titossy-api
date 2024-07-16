@@ -4,7 +4,6 @@ import com.example.commands.queries.product.ProductRepositoryImpl
 import com.example.dao.ProductRepository
 import com.example.exceptions.ApiResponse
 import com.example.models.product.ProductRequest
-import com.example.routing.service.storeProductImage
 import com.example.routing.service.uploadImageToHippo
 import com.example.routing.util.Product
 import io.ktor.client.*
@@ -17,7 +16,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
 import java.math.BigDecimal
-import java.util.UUID
 
 fun Route.productRoutes(
     client: HttpClient,
@@ -51,15 +49,11 @@ fun Route.productRoutes(
 
                 is PartData.FileItem -> {
                     if (part.name == "image") {
-                        val ext = part.originalFileName?.let { it1 -> File(it1).extension }
-                        val file = File("uploads/product/${UUID.randomUUID()}.$ext")
-                        part.streamProvider().use { its ->
-                            file.outputStream().buffered().use {
-                                its.copyTo(it)
-                            }
-                        }
-                        image = uploadImageToHippo(file, client, apiKey, url)
-                        file.delete()
+                        val fileBytes = part.streamProvider().readBytes()
+                        val tempFile = File.createTempFile("upload-", part.originalFileName)
+                        tempFile.writeBytes(fileBytes)
+                        image = uploadImageToHippo(tempFile, client, apiKey, url)
+                        tempFile.delete()
                     }
                 }
 
@@ -164,7 +158,10 @@ fun Route.productRoutes(
                 is PartData.FileItem -> {
                     if (part.name == "image") {
                         val fileBytes = part.streamProvider().readBytes()
-                        image = storeProductImage(fileBytes, part)
+                        val tempFile = File.createTempFile("upload-", part.originalFileName)
+                        tempFile.writeBytes(fileBytes)
+                        image = uploadImageToHippo(tempFile, client, apiKey, url)
+                        tempFile.delete()
                     }
                 }
 

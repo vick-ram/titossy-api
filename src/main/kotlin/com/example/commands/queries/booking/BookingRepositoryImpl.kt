@@ -10,8 +10,6 @@ import com.example.db.customer.Customer
 import com.example.db.util.DatabaseUtil.dbQuery
 import com.example.exceptions.UnexpectedError
 import com.example.models.booking.*
-import kotlinx.coroutines.*
-import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import java.math.BigDecimal
 import java.time.LocalDateTime

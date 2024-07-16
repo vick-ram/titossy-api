@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.example.ApplicationTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2024-07-15T19:15:41" hostname="DESKTOP-KNRBREK" time="0.988">
+<testsuite name="com.example.ApplicationTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2024-07-16T16:22:39" hostname="DESKTOP-KNRBREK" time="1.11">
   <properties/>
-  <testcase name="testCustomer" classname="com.example.ApplicationTest" time="0.988">
-    <failure message="com.typesafe.config.ConfigException$UnresolvedSubstitution: application.conf @ file:/C:/Users/vickr/IdeaProjects/ktor-server/build/resources/main/application.conf: 20: Could not resolve substitution to a value: ${IMGHIPPO_API_KEY}" type="com.typesafe.config.ConfigException$UnresolvedSubstitution">com.typesafe.config.ConfigException$UnresolvedSubstitution: application.conf @ file:/C:/Users/vickr/IdeaProjects/ktor-server/build/resources/main/application.conf: 20: Could not resolve substitution to a value: ${IMGHIPPO_API_KEY}
+  <testcase name="testCustomer" classname="com.example.ApplicationTest" time="1.11">
+    <failure message="com.typesafe.config.ConfigException$UnresolvedSubstitution: application.conf @ file:/C:/Users/vickr/IdeaProjects/ktor-server/build/resources/main/application.conf: 14: Could not resolve substitution to a value: ${DB_DRIVER}" type="com.typesafe.config.ConfigException$UnresolvedSubstitution">com.typesafe.config.ConfigException$UnresolvedSubstitution: application.conf @ file:/C:/Users/vickr/IdeaProjects/ktor-server/build/resources/main/application.conf: 14: Could not resolve substitution to a value: ${DB_DRIVER}
 	at app//com.typesafe.config.impl.ConfigReference.resolveSubstitutions(ConfigReference.java:111)
 	at app//com.typesafe.config.impl.ResolveContext.realResolve(ResolveContext.java:183)
 	at app//com.typesafe.config.impl.ResolveContext.resolve(ResolveContext.java:146)

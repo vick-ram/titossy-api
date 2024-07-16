@@ -9,12 +9,9 @@ import com.example.db.employee.Employee
 import com.example.db.employee.EmployeeTable
 import com.example.db.util.DatabaseUtil.dbQuery
 import com.example.models.booking.BookingAssign
-import com.example.models.booking.Frequency
 import com.example.models.employee.Roles
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 import java.util.*
 
 class BookingCleanerRepositoryImpl : BookingCleanerRepository {
@@ -32,28 +29,11 @@ class BookingCleanerRepositoryImpl : BookingCleanerRepository {
                 throw IllegalArgumentException("The employee is not a cleaner")
             }
 
-            /*val existingAssignment = BookingAssignment.find {
-                (BookingAssignments.cleanerId eq bookingAssign.cleanerId)
-            }.any { assignment ->
-                hasDateTimeConflict(
-                    booking.bookingDateTime,
-                    assignment.booking.bookingDateTime,
-                    booking.frequency
-                )
-            }
-
-            if (existingAssignment) {
-                throw IllegalArgumentException("The cleaner already has a conflicting booking")
-            }*/
-
             BookingAssignment.new {
                 this.booking = booking
                 this.cleaner = cleaner
                 this.assignedBy = supervisorId.let { Employee.findById(it) }
             }
-            /*EmployeeTable.update({ EmployeeTable.id eq cleanerId }) {
-                it[EmployeeTable.availability] = Availability.UNAVAILABLE
-            }*/
             return@dbQuery true
         }
 
@@ -103,27 +83,5 @@ class BookingCleanerRepositoryImpl : BookingCleanerRepository {
         }
         bookingCleaner.delete()
         return@dbQuery true
-    }
-}
-
-
-fun hasDateTimeConflict(
-    bookingDateTime: LocalDateTime,
-    otherDateTime: LocalDateTime,
-    frequency: Frequency
-): Boolean {
-    return when (frequency) {
-        Frequency.ONE_TIME -> bookingDateTime.isEqual(otherDateTime)
-        Frequency.WEEKLY -> bookingDateTime.truncatedTo(ChronoUnit.DAYS) == otherDateTime.truncatedTo(ChronoUnit.DAYS)
-                && bookingDateTime.dayOfWeek == otherDateTime.dayOfWeek
-
-        Frequency.BIWEEKLY -> {
-            val weeksBetween = ChronoUnit.WEEKS.between(otherDateTime, bookingDateTime).toInt()
-            weeksBetween % 2 == 0 && bookingDateTime.truncatedTo(ChronoUnit.DAYS) == otherDateTime.truncatedTo(
-                ChronoUnit.DAYS
-            )
-        }
-
-        Frequency.MONTHLY -> bookingDateTime.dayOfMonth == otherDateTime.dayOfMonth
     }
 }

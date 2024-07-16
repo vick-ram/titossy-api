@@ -16,7 +16,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
 import java.math.BigDecimal
-import java.util.*
 
 fun Route.serviceRoutes(
     client: HttpClient,
@@ -45,15 +44,13 @@ fun Route.serviceRoutes(
                 }
 
                 is PartData.FileItem -> {
-                    val ext = part.originalFileName?.let { it1 -> File(it1).extension }
-                    val file = File("uploads/service/${UUID.randomUUID()}.$ext")
-                    part.streamProvider().use { its ->
-                        file.outputStream().buffered().use {
-                            its.copyTo(it)
-                        }
+                    if (part.name == "imageUrl") {
+                        val fileBytes = part.streamProvider().readBytes()
+                        val tempFile = File.createTempFile("upload-", part.originalFileName)
+                        tempFile.writeBytes(fileBytes)
+                        imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
+                        tempFile.delete()
                     }
-                    imageUrl = uploadImageToHippo(file, client, apiKey, url)
-                    file.delete()
                 }
 
                 else -> {}
@@ -143,20 +140,53 @@ fun Route.serviceRoutes(
         }
     }
 
-    put<Service.Id, ServiceRequest> { param, serviceRequest ->
+    put<Service.Id, ServiceRequest> { param, _ ->
+        val updateServiceMultipart = call.receiveMultipart()
+
+        var name: String? = null
+        var description: String? = null
+        var price: BigDecimal? = null
+        var imageUrl: String? = null
+
+        updateServiceMultipart.forEachPart { part ->
+            when (part) {
+                is PartData.FormItem -> {
+                    when (part.name) {
+                        "name" -> name = part.value
+                        "description" -> description = part.value
+                        "price" -> price = part.value.toBigDecimal()
+                    }
+                }
+
+                is PartData.FileItem -> {
+                    if (part.name == "imageUrl") {
+                        val fileBytes = part.streamProvider().readBytes()
+                        val tempFile = File.createTempFile("upload-", part.originalFileName)
+                        tempFile.writeBytes(fileBytes)
+                        imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
+                        tempFile.delete()
+                    }
+                }
+
+                else -> {}
+            }
+            part.dispose()
+        }
+
         try {
-            dao.updateService(param.id, serviceRequest)
+            val service = ServiceRequest(name!!, description!!, price!!, imageUrl!!)
+            dao.updateService(param.id, service)
             call.respond(
                 ApiResponse.success(
-                    HttpStatusCode.Accepted,
+                    HttpStatusCode.OK,
                     null,
-                    "Service successfully updated"
+                    "Service updated successfully"
                 )
             )
         } catch (e: Exception) {
             call.respond(
                 ApiResponse.error(
-                    HttpStatusCode.Conflict,
+                    HttpStatusCode.BadRequest,
                     e.message
                 )
             )

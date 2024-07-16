@@ -3,19 +3,6 @@ package com.example.auth
 import com.example.exceptions.InvalidToken
 import com.example.exceptions.TokenAlreadyBlacklisted
 
-/*
-object TokenBlackList {
-    private val blacklistedTokens = mutableSetOf<String>()
-
-    fun blacklistToken(token: String) {
-        blacklistedTokens.add(token)
-    }
-
-    fun isTokenBlacklisted(token: String): Boolean {
-        return blacklistedTokens.contains(token)
-    }
-}*/
-
 object TokenBlackList {
     private val blacklistedTokens = mutableSetOf<String>()
 
@@ -29,7 +16,7 @@ object TokenBlackList {
         blacklistedTokens.add(token)
     }
 
-    fun isTokenBlacklisted(token: String): Boolean {
+    private fun isTokenBlacklisted(token: String): Boolean {
         return blacklistedTokens.contains(token)
     }
 }

@@ -8,7 +8,6 @@ import com.example.db.util.DatabaseUtil.dbQuery
 import com.example.models.service.ServiceAddOnRequest
 import com.example.models.service.ServiceAddOnResponse
 import io.ktor.server.plugins.*
-import org.jetbrains.exposed.sql.and
 import java.util.*
 
 class ServiceAddonRepositoryImpl : ServiceAddOnRepository {
