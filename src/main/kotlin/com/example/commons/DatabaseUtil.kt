@@ -13,8 +13,8 @@ object DatabaseUtil {
     fun init(
         url: String,
         driver: String,
-/*        user: String,
-        password: String*/
+        /*        user: String,
+                password: String*/
     ) {
         Database.connect(hikari(url, driver/*, user, password*/))
         transaction {
@@ -282,8 +282,8 @@ object DatabaseUtil {
 fun hikari(
     url: String,
     driver: String,
-/*    user: String,
-    password: String*/
+    /*    user: String,
+        password: String*/
 ): HikariDataSource {
     val config = HikariConfig()
         .apply {
@@ -291,7 +291,8 @@ fun hikari(
             val uri = URI(url)
             val username = uri.userInfo.split(":").toTypedArray()[0]
             val pass = uri.userInfo.split(":").toTypedArray()[1]
-            val jdbcUrl = "jdbc:postgresql://${uri.host}:${uri.port}${uri.path}?sslmode=require&user=$username&password=$pass"
+            val jdbcUrl =
+                "jdbc:postgresql://${uri.host}:${uri.port}${uri.path}?sslmode=require&user=$username&password=$pass"
             this.jdbcUrl = jdbcUrl
             this.driverClassName = driver
             /*this.username = user

@@ -1,11 +1,7 @@
 package com.example
 
 import com.example.commons.DatabaseUtil
-import com.example.plugins.configureAuthentication
-import com.example.plugins.configureCORS
-import com.example.plugins.configureException
-import com.example.plugins.configureRouting
-import com.example.plugins.configureSerialization
+import com.example.plugins.*
 import com.example.routing.configureWebsocket
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -40,8 +36,8 @@ fun Application.module() {
     DatabaseUtil.init(
         url = url,
         driver = driver,
-/*        user = user,
-        password = password*/
+        /*        user = user,
+                password = password*/
     )
     configureException()
     configureSerialization()
