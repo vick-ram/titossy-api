@@ -1,15 +1,16 @@
 package com.example.dao
 
-import com.example.db.booking.Booking
-import com.example.models.booking.BookingRequest
-import com.example.models.booking.BookingResponse
-import com.example.models.booking.UpdateBookingStatus
-import java.util.*
+import com.example.db.Booking
+import com.example.models.BookingRequest
+import com.example.models.BookingResponse
+import com.example.models.UpdateBookingStatus
+import kotlinx.coroutines.CoroutineScope
 
 interface BookingRepository {
     suspend fun createNewBooking(
-        customerId: UUID,
-        bookingRequest: BookingRequest
+        customerId: String,
+        bookingRequest: BookingRequest,
+        scope: CoroutineScope
     ): BookingResponse
 
     suspend fun getFilteredBookings(
@@ -18,11 +19,12 @@ interface BookingRepository {
 
     suspend fun updateBookingStatus(
         id: String,
-        bookingStatusUpdate: UpdateBookingStatus
+        bookingStatusUpdate: UpdateBookingStatus,
+        scope: CoroutineScope
     ): Boolean
 
     suspend fun updateBooking(
-        customerId: UUID,
+        customerId: String,
         id: String,
         bookingUpdateRequest: BookingRequest
     ): Boolean

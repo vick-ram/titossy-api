@@ -1,14 +1,14 @@
 package com.example
 
-import com.example.db.util.DatabaseUtil
-import com.example.plugins.auth.configureAuthentication
-import com.example.plugins.cors.configurecORS
-import com.example.plugins.error.configureException
-import com.example.plugins.routing.configureRouting
-import com.example.plugins.serialization.configureSerialization
+import com.example.commons.DatabaseUtil
+import com.example.plugins.configureAuthentication
+import com.example.plugins.configureCORS
+import com.example.plugins.configureException
+import com.example.plugins.configureRouting
+import com.example.plugins.configureSerialization
+import com.example.routing.configureWebsocket
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -36,22 +36,30 @@ fun Application.module() {
         install(ContentNegotiation) {
             json()
         }
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30000
-        }
-        install(UserAgent) {
-            agent = "Ktor-server-client"
-        }
     }
-    DatabaseUtil.init(url,driver, user, password)
+    DatabaseUtil.init(
+        url = url,
+        driver = driver,
+        user = user,
+        password = password
+    )
     configureException()
     configureSerialization()
     configureAuthentication(
         secret = secret,
         issuer = issuer,
+        audience = audience,
         jwtRealm = realm
     )
     install(Resources)
-    configureRouting(client, imgHippoApiKey, imgHippoUrl, secret, issuer, audience)
-    configurecORS()
+    configureRouting(
+        client = client,
+        apiKey = imgHippoApiKey,
+        url = imgHippoUrl,
+        secret = secret,
+        issuer = issuer,
+        audience = audience
+    )
+    configureCORS()
+    configureWebsocket(secret, audience, issuer)
 }

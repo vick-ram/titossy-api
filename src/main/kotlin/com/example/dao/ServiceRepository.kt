@@ -1,8 +1,8 @@
 package com.example.dao
 
-import com.example.db.service.Service
-import com.example.models.service.ServiceRequest
-import com.example.models.service.ServiceResponse
+import com.example.db.Service
+import com.example.models.ServiceRequest
+import com.example.models.ServiceResponse
 import java.util.*
 
 interface ServiceRepository {

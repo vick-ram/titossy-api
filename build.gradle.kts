@@ -12,18 +12,12 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
 }
 
-ktor {
-    fatJar {
-        archiveFileName = "titossy.jar"
-    }
-}
-
 group = "com.example"
 version = "0.0.1"
 
 application {
     mainClass.set("io.ktor.server.netty.EngineMain")
-    mainClass.set("com.example.ApplicationKt")
+    project.setProperty("mainClassName", mainClass.get())
 
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
@@ -31,6 +25,12 @@ application {
 
 repositories {
     mavenCentral()
+}
+
+ktor {
+    fatJar {
+        archiveFileName.set("titossy.jar")
+    }
 }
 
 dependencies {
@@ -55,10 +55,8 @@ dependencies {
     //cors
     implementation("io.ktor:ktor-server-cors:$ktor_version")
     implementation("io.ktor:ktor-server-resources:$ktor_version")
-    implementation("io.ktor:ktor-client-cio-jvm:2.3.9")
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
-
     //Client
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-cio:$ktor_version")
@@ -67,4 +65,12 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     //implementation("com.pusher:push-notifications-server-java:1.1.1")
 
+    // sendGrid email service
+//    implementation("com.sendgrid:sendgrid-java:4.10.3")
+
+    //websocket
+    implementation("io.ktor:ktor-server-websockets:$ktor_version")
+    // jwt decoder
+    implementation("com.auth0:java-jwt:4.2.1")
 }
+

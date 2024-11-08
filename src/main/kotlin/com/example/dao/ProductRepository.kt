@@ -1,8 +1,8 @@
 package com.example.dao
 
-import com.example.models.product.ProductRequest
-import com.example.models.product.ProductResponse
-import java.util.UUID
+import com.example.models.ProductRequest
+import com.example.models.ProductResponse
+import java.util.*
 
 interface ProductRepository {
     suspend fun getProductById(id: UUID): ProductResponse?

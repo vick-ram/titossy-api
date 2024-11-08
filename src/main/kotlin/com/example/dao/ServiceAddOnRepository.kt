@@ -1,8 +1,7 @@
 package com.example.dao
 
-import com.example.db.service.ServiceAddOn
-import com.example.models.service.ServiceAddOnRequest
-import com.example.models.service.ServiceAddOnResponse
+import com.example.models.ServiceAddOnRequest
+import com.example.models.ServiceAddOnResponse
 import java.util.*
 
 interface ServiceAddOnRepository {

@@ -1,13 +1,12 @@
 package com.example.dao
 
-import com.example.db.booking.BookingAssignment
-import com.example.db.booking.BookingCleanerResponse
-import com.example.models.booking.BookingAssign
-import java.util.UUID
+import com.example.db.BookingAssignment
+import com.example.db.BookingCleanerResponse
+import com.example.models.BookingAssign
 
 interface BookingCleanerRepository {
     suspend fun assignBookingToCleaner(
-        supervisorId: UUID,
+        supervisorId: String,
         bookingAssign: BookingAssign
     ): Boolean
 
@@ -15,6 +14,6 @@ interface BookingCleanerRepository {
         filter: (BookingAssignment) -> Boolean
     ): List<BookingCleanerResponse>
 
-    suspend fun updateBookingCleaner(bookingId: String, cleanerId: UUID): Boolean
+    suspend fun updateBookingCleaner(bookingId: String, cleanerId: String): Boolean
     suspend fun deleteBookingCleaner(bookingId: String): Boolean
 }
