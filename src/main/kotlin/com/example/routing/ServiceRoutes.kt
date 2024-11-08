@@ -16,8 +16,6 @@ import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.utils.io.*
-import kotlinx.io.readByteArray
 import java.io.File
 import java.math.BigDecimal
 import java.util.*
@@ -245,8 +243,7 @@ fun Route.serviceRoutes(
 
                 is PartData.FileItem -> {
                     if (part.name == "imageUrl") {
-                        //val fileBytes = part.streamProvider().readBytes()
-                        val fileBytes = part.provider().readRemaining().readByteArray()
+                        val fileBytes = part.streamProvider().readBytes()
                         val tempFile = File.createTempFile("upload-", part.originalFileName)
                         tempFile.writeBytes(fileBytes)
                         try {

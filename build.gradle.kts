@@ -33,6 +33,10 @@ ktor {
     }
 }
 
+tasks {
+    create("stage").dependsOn("installDist")
+}
+
 dependencies {
     implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-netty-jvm:$ktor_version")
@@ -72,5 +76,6 @@ dependencies {
     implementation("io.ktor:ktor-server-websockets:$ktor_version")
     // jwt decoder
     implementation("com.auth0:java-jwt:4.2.1")
+
 }
 
