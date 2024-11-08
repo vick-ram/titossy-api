@@ -40,8 +40,8 @@ fun Application.module() {
     DatabaseUtil.init(
         url = url,
         driver = driver,
-        user = user,
-        password = password
+/*        user = user,
+        password = password*/
     )
     configureException()
     configureSerialization()
