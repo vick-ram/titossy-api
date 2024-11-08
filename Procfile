@@ -1,1 +1,1 @@
-web: java -jar build/libs/titossy.jar
+web: ./build/install/ktor-server/bin/ktor-server
