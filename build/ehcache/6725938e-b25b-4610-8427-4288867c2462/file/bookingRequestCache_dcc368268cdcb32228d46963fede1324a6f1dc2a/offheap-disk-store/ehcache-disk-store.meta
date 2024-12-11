@@ -1,4 +1,0 @@
-#Key and value types
-#Fri Nov 01 20:07:35 EAT 2024
-keyType=java.lang.String
-valueType=com.example.models.BookingRequest
