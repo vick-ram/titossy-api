@@ -1,5 +1,6 @@
 package com.example.routing
 
+import com.example.commons.ApiResponse
 import com.example.commons.decodeJwt
 import com.example.commons.makeJWTVerifier
 import com.example.db.MessageEntity
@@ -53,6 +54,7 @@ fun saveMessageToDatabase(sender: String, receiver: String, message: String) {
         }
     }
 }
+
 fun Application.configureWebsocket(secret: String, audience: String, issuer: String) {
     install(WebSockets) {
         pingPeriod = java.time.Duration.ofMinutes(1)
@@ -64,11 +66,26 @@ fun Application.configureWebsocket(secret: String, audience: String, issuer: Str
     routing {
         webSocket("/api/chat/{partnerId}") {
             val jwtVerifier = makeJWTVerifier(secret, audience, issuer)
-            val tokenPayload = call.request.headers["Authorization"]
-            val token = tokenPayload?.split(" ")?.get(1)
-            val decodedToken = decodeJwt(token!!, jwtVerifier)
-            val userId = decodedToken?.subject ?: return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No userId"))
-            val partnerId = call.parameters["partnerId"] ?: return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No partnerId"))
+            val token = call.request.queryParameters["token"]
+            if (token == null) {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No token specified"))
+                return@webSocket
+            }
+            val decodedToken = decodeJwt(token, jwtVerifier)
+            val userId = decodedToken?.subject ?: return@webSocket close(
+                CloseReason(
+                    CloseReason.Codes.VIOLATED_POLICY,
+                    "No userId"
+                )
+            )
+
+            println("User id from token: $userId")
+            val partnerId = call.parameters["partnerId"] ?: return@webSocket close(
+                CloseReason(
+                    CloseReason.Codes.VIOLATED_POLICY,
+                    "No partnerId"
+                )
+            )
             handlePrivateChat(userId, partnerId)
         }
     }
@@ -79,7 +96,7 @@ fun fetchMessagesBetweenBetweenUsers(sender: String, receiver: String): List<Mes
         (Messages.sender eq sender and (Messages.receiver eq receiver)) or
                 (Messages.sender eq receiver and (Messages.receiver eq sender))
     }.orderBy(Messages.timestamp to org.jetbrains.exposed.sql.SortOrder.ASC)
-        .map{it.toMessageResponse()}
+        .map { it.toMessageResponse() }
 }
 
 fun Route.messageRoute() {
@@ -88,7 +105,14 @@ fun Route.messageRoute() {
             val principal = call.principal<JWTPrincipal>()
             val sender = principal?.subject ?: return@get call.respond(HttpStatusCode.BadRequest)
             val receiver = call.parameters["receiver"] ?: return@get call.respond(HttpStatusCode.BadRequest)
-            call.respond(fetchMessagesBetweenBetweenUsers(sender, receiver))
+
+            call.respond(
+                ApiResponse.success(
+                    statusCode = HttpStatusCode.OK,
+                    data = fetchMessagesBetweenBetweenUsers(sender, receiver),
+                    message = "Messages for $receiver fetched successfully"
+                )
+            )
         }
     }
 }

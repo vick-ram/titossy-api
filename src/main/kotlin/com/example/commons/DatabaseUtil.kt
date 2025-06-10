@@ -12,11 +12,11 @@ import java.net.URI
 object DatabaseUtil {
     fun init(
         url: String,
-        driver: String,
+        driver: String
         /*        user: String,
                 password: String*/
     ) {
-        Database.connect(hikari(url, driver/*, user, password*/))
+        Database.connect(hikari(url, driver/*, user, password*/)).apply { createEnums() }
         transaction {
             addLogger(StdOutSqlLogger)
             SchemaUtils.create(
@@ -42,8 +42,53 @@ object DatabaseUtil {
                 ActivityLogs,
                 Messages
             )
+
+            /*Add supplier id to the products table*/
+            exec(
+                """
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='${ProductTable.tableName}' AND column_name='supplier_id'
+                    ) THEN
+                        ALTER TABLE ${ProductTable.tableName}
+                        ADD COLUMN supplier_id varchar;
+                    END IF;
+            
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.table_constraints
+                        WHERE table_name='${ProductTable.tableName}' AND constraint_name='fk_supplier'
+                    ) THEN
+                        ALTER TABLE ${ProductTable.tableName}
+                        ADD CONSTRAINT fk_supplier
+                        FOREIGN KEY (supplier_id)
+                        REFERENCES suppliers(id)
+                        ON DELETE CASCADE;
+                    END IF;
+                END
+                $$;
+                """.trimIndent()
+            )
+
+            /*assing the products to this supplier*/
+            exec(
+                """
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM ${ProductTable.tableName} WHERE supplier_id IS NULL
+                    ) THEN
+                        UPDATE ${ProductTable.tableName}
+                        SET supplier_id = '51fec32c-8'
+                        WHERE supplier_id IS NULL;
+                    END IF;
+                END
+                $$;
+                """.trimIndent()
+            )
             /**
-             * Trigger for customer for performing full text search
+             * Trigger for customer for performing full-text search
              */
             exec(
                 stmt = """
@@ -167,7 +212,7 @@ object DatabaseUtil {
                 CREATE OR REPLACE FUNCTION employee_tsv_trigger() RETURNS trigger AS $$
                 BEGIN
                 NEW.tsv :=
-                to_tsvector('english', COALESCE(NEW.username, '') || ' ' || COALESCE(NEW.full_name, '') || ' ' || COALESCE(NEW.email, '') || ' ' || COALESCE(NEW.role));
+                to_tsvector('english', COALESCE(NEW.username, '') || ' ' || COALESCE(NEW.full_name, '') || ' ' || COALESCE(NEW.email, '') || ' ' || (NEW.role));
                 RETURN NEW;
                 END
                 $$ LANGUAGE plpgsql;
@@ -186,7 +231,7 @@ object DatabaseUtil {
             )
 
             /**
-             * Trigger functions and indices for Product table for performing
+             * Trigger functions and indices for the Product table for performing
              * full-text search
              */
 
@@ -271,6 +316,8 @@ object DatabaseUtil {
                 ON ${Services.tableName} FOR EACH ROW EXECUTE FUNCTION service_tsv_trigger();
             """.trimIndent()
             )
+
+            /*Create Types*/
         }
     }
 
@@ -289,8 +336,8 @@ fun hikari(
         .apply {
             //this.jdbcUrl = "${url}?rewriteBatchedInserts=true"
             val uri = URI(url)
-            val username = uri.userInfo.split(":").toTypedArray()[0]
-            val pass = uri.userInfo.split(":").toTypedArray()[1]
+            val username = uri.userInfo?.split(":")?.toTypedArray()[0]
+            val pass = uri.userInfo?.split(":")?.toTypedArray()[1]
             val jdbcUrl =
                 "jdbc:postgresql://${uri.host}:${uri.port}${uri.path}?sslmode=require&user=$username&password=$pass"
             this.jdbcUrl = jdbcUrl
@@ -304,4 +351,34 @@ fun hikari(
         }
 
     return HikariDataSource(config)
+}
+
+//Create enums
+fun Database.createEnums() {
+    val enums = listOf(
+        Pair("approvalstatus", ApprovalStatus.entries.map {it.name}),
+        Pair("bookingstatus", BookingStatus.entries.map {it.name}),
+        Pair("frequency", Frequency.entries.map {it.name}),
+        Pair("gender", Gender.entries.map {it.name}),
+        Pair("roles", Roles.entries.map {it.name}),
+        Pair("availability", Availability.entries.map {it.name}),
+        Pair("availability", Availability.entries.map {it.name}),
+        Pair("paymentmethod", PaymentMethod.entries.map {it.name}),
+        Pair("paymentstatus", PaymentStatus.entries.map {it.name}),
+        Pair("order_status", OrderStatus.entries.map {it.name}),
+
+    )
+
+    transaction {
+        enums.forEach { (typeName, values) ->
+            val valuesList = values.joinToString(", ") { "'$it'" }
+            exec("""
+                DO $$ BEGIN
+                    CREATE TYPE $typeName AS ENUM ($valuesList);
+                EXCEPTION
+                    WHEN duplicate_object THEN null;
+                END $$
+            """.trimIndent())
+        }
+    }
 }

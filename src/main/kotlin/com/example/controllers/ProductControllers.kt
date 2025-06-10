@@ -6,6 +6,7 @@ import com.example.commons.generateRandomString
 import com.example.dao.ProductRepository
 import com.example.db.Product
 import com.example.db.ProductTable
+import com.example.db.Supplier
 import com.example.db.getFirstLettersOfWords
 import com.example.models.ProductRequest
 import com.example.models.ProductResponse
@@ -29,6 +30,8 @@ class ProductRepositoryImpl : ProductRepository {
         val productExists = Product
             .find { ProductTable.name eq product.name }
             .singleOrNull()
+        val supplier = Supplier.findById(product.supplierId)
+            ?: throw IllegalArgumentException("Supplier with id ${product.supplierId} not found")
         if (productExists == null) {
             return@dbQuery Product.new {
                 this.name = product.name
@@ -38,6 +41,7 @@ class ProductRepositoryImpl : ProductRepository {
                 this.stock = product.stock
                 this.reorderLevel = product.reorderLevel
                 this.sku = getFirstLettersOfWords(this.name) + "-" + generateRandomString(5)
+                this.supplier = supplier
                 this.tsv = "to_tsvector('english', '${this.name} ${this.description}')"
             }.toProductResponse()
         } else {
@@ -59,6 +63,8 @@ class ProductRepositoryImpl : ProductRepository {
         id: UUID,
         product: ProductRequest
     ): Boolean = dbQuery {
+        val supplier = Supplier.findById(product.supplierId)
+            ?: throw IllegalArgumentException("Supplier with id ${product.supplierId} not found")
         Product.findByIdAndUpdate(id) { update ->
             update.name = product.name
             update.description = product.description
@@ -66,6 +72,7 @@ class ProductRepositoryImpl : ProductRepository {
             update.image = product.image
             update.stock = product.stock
             update.reorderLevel = product.reorderLevel
+            update.supplier = supplier
         }
         return@dbQuery true
     }
@@ -85,5 +92,26 @@ class ProductRepositoryImpl : ProductRepository {
             .where { ProductTable.tsv.customMatch(query) }
             .map { Product.wrapRow(it).toProductResponse() }
             .sortedByDescending { it.createdAt.coerceAtLeast(it.updatedAt) }
+    }
+
+    // NEW: Get products by supplier
+    override suspend fun getProductsBySupplier(supplierId: String): List<ProductResponse> = dbQuery {
+        return@dbQuery Product.find { ProductTable.supplier eq supplierId }
+            .sortedByDescending { it.createdAt.coerceAtLeast(it.updatedAt) }
+            .map { it.toProductResponse() }
+    }
+
+    // NEW: Get low stock products (below reorder level)
+    override suspend fun getLowStockProducts(): List<ProductResponse> = dbQuery {
+        return@dbQuery Product.find { ProductTable.stock less ProductTable.reorderLevel }
+            .sortedBy { it.stock } // Sort by most critical first
+            .map { it.toProductResponse() }
+    }
+
+    // NEW: Get products needing reorder (stock <= reorderLevel)
+    override suspend fun getProductsNeedingReorder(): List<ProductResponse> = dbQuery {
+        return@dbQuery Product.find { ProductTable.stock lessEq ProductTable.reorderLevel }
+            .sortedBy { it.stock }
+            .map { it.toProductResponse() }
     }
 }

@@ -46,14 +46,21 @@ data class ServiceAddOnRequest(
 }
 
 @Serializable
+data class ServiceAddonUpdate(
+    val name: String? = null,
+    val description: String? = null,
+    @Serializable(with = BigDecimalSerializer::class)
+    val price: BigDecimal? = null,
+    val imageUrl: String? = null
+)
+
+@Serializable
 data class ServiceUpdate(
-    @Serializable(with = UUIDSerializer::class)
-    val serviceId: UUID,
-    val serviceName: String,
-    val category: String,
-    val description: String,
-    val price: Double,
-    val imageUrl: String?
+    val name: String? = null,
+    val description: String? = null,
+    @Serializable(with = BigDecimalSerializer::class)
+    val price: BigDecimal? = null,
+    val imageUrl: String? = null
 )
 
 @Serializable

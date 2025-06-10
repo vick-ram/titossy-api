@@ -7,8 +7,12 @@ import io.ktor.server.routing.*
 
 fun Application.configureRouting(
     client: HttpClient,
-    apiKey: String,
-    url: String,
+    imgHippoUrl: String,
+    imgHippoApiKey: String,
+    imgBBUrl: String,
+    imgBBApiKey: String,
+//    apiKey: String,
+//    url: String,
     secret: String,
     issuer: String,
     audience: String
@@ -19,9 +23,9 @@ fun Application.configureRouting(
         supplierRoutes(secret, issuer, audience)
         bookingRoute()
         assignBookingRoutes()
-        serviceRoutes(client, apiKey, url)
-        serviceAddonRoutes(client, apiKey, url)
-        productRoutes(client, apiKey, url)
+        serviceRoutes(client,imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey,)
+        serviceAddonRoutes(client,imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey,)
+        productRoutes(client,imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey,)
         customerPaymentRoutes()
         supplierPaymentRoutes()
         orderRoutes()
@@ -30,6 +34,7 @@ fun Application.configureRouting(
         productCartRoutes()
         activitiesRoutes()
         messageRoute()
+        fetchMetrics()
     }
 }
 

@@ -10,10 +10,11 @@ import com.example.db.ServiceAddOns
 import com.example.db.Services
 import com.example.models.ServiceAddOnRequest
 import com.example.models.ServiceAddOnResponse
+import com.example.models.ServiceAddonUpdate
 import com.example.models.ServiceRequest
 import com.example.models.ServiceResponse
+import com.example.models.ServiceUpdate
 import io.ktor.server.plugins.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.selectAll
 import java.util.*
 
@@ -53,13 +54,13 @@ class ServiceAddonRepositoryImpl : ServiceAddOnRepository {
     override suspend fun updateServiceAddOn(
         serviceId: UUID,
         serviceAddOnId: UUID,
-        serviceAddOn: ServiceAddOnRequest
+        serviceAddOn: ServiceAddonUpdate
     ): Boolean = dbQuery {
         ServiceAddOn.findByIdAndUpdate(serviceAddOnId) { update ->
-            update.name = serviceAddOn.name
-            update.description = serviceAddOn.description
-            update.price = serviceAddOn.price
-            update.imageUrl = serviceAddOn.imageUrl
+            serviceAddOn.name?.let { update.name }
+            serviceAddOn.description?.let { update.description }
+            serviceAddOn.price?.let { update.price }
+            serviceAddOn.imageUrl?.let { update.imageUrl }
         }
         return@dbQuery true
     }
@@ -97,12 +98,12 @@ class ServiceRepositoryImpl : ServiceRepository {
         }.toServiceResponse()
     }
 
-    override suspend fun updateService(serviceId: UUID, service: ServiceRequest): Boolean = dbQuery {
+    override suspend fun updateService(serviceId: UUID, service: ServiceUpdate): Boolean = dbQuery {
         Service.findByIdAndUpdate(serviceId) { update ->
-            update.name = service.name
-            update.description = service.description
-            update.price = service.price
-            update.imageUrl = service.imageUrl
+            service.name?.let { update.name }
+            service.description?.let { update.description }
+            service.price?.let { update.price }
+            service.imageUrl?.let { update.imageUrl }
         }
         return@dbQuery true
     }

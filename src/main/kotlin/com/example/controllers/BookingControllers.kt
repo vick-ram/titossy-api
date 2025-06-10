@@ -228,7 +228,7 @@ class BookingRepositoryImpl : BookingRepository {
                     BookingServiceAddOn.new {
                         this.booking = booking
                         this.service = it
-                        this.quantity = quantity
+                        this.quantity = cartItem.quantity
                         this.subtotal = it.price.times(cartItem.quantity.toBigDecimal())
                             .times(frequency)
                     }

@@ -6,7 +6,9 @@ import com.example.controllers.ServiceRepositoryImpl
 import com.example.dao.ServiceAddOnRepository
 import com.example.dao.ServiceRepository
 import com.example.models.ServiceAddOnRequest
+import com.example.models.ServiceAddonUpdate
 import com.example.models.ServiceRequest
+import com.example.models.ServiceUpdate
 import io.ktor.client.*
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -22,8 +24,12 @@ import java.util.*
 
 fun Route.serviceAddonRoutes(
     client: HttpClient,
-    apiKey: String,
-    url: String
+    imgHippoUrl: String,
+    imgHippoApiKey: String,
+    imgBBUrl: String,
+    imgBBApiKey: String,
+//    apiKey: String,
+//    url: String
 ) {
     val dao: ServiceAddOnRepository = ServiceAddonRepositoryImpl()
 
@@ -52,7 +58,9 @@ fun Route.serviceAddonRoutes(
                         val tempFile = File.createTempFile("upload-", part.originalFileName)
                         tempFile.writeBytes(fileBytes)
                         try {
-                            imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
+                            val createImageService = ImageService(client,tempFile, imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey)
+                            imageUrl = createImageService.uploadImage()
+//                            imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
                         } catch (e: Exception) {
                             e.printStackTrace()
                             call.respond(
@@ -150,7 +158,9 @@ fun Route.serviceAddonRoutes(
                         val tempFile = File.createTempFile("upload-", part.originalFileName)
                         tempFile.writeBytes(fileBytes)
                         try {
-                            imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
+                            val updateImageService = ImageService(client,tempFile, imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey)
+                            imageUrl = updateImageService.uploadImage()
+//                            imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
                         } catch (e: Exception) {
                             e.printStackTrace()
                             call.respond(
@@ -173,7 +183,7 @@ fun Route.serviceAddonRoutes(
         }
 
         try {
-            val serviceAddonUpdate = ServiceAddOnRequest(
+            val serviceAddonUpdate = ServiceAddonUpdate(
                 name = name!!,
                 description = description!!,
                 price = price!!,
@@ -217,8 +227,12 @@ fun Route.serviceAddonRoutes(
 
 fun Route.serviceRoutes(
     client: HttpClient,
-    apiKey: String,
-    url: String
+    imgHippoUrl: String,
+    imgHippoApiKey: String,
+    imgBBUrl: String,
+    imgBBApiKey: String,
+//    apiKey: String,
+//    url: String
 ) {
     val dao: ServiceRepository = ServiceRepositoryImpl()
 
@@ -247,13 +261,16 @@ fun Route.serviceRoutes(
                         val tempFile = File.createTempFile("upload-", part.originalFileName)
                         tempFile.writeBytes(fileBytes)
                         try {
-                            imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
+                            val createImageService = ImageService(client, tempFile, imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey)
+                            imageUrl = createImageService.uploadImage()
+//                            imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
+                            println("Image url from imghippo: $imageUrl")
                         } catch (e: Exception) {
                             e.printStackTrace()
                             call.respond(
                                 ApiResponse.error(
                                     HttpStatusCode.InternalServerError,
-                                    "Error uploading image"
+                                    "Error uploading image ${e.localizedMessage}"
                                 )
                             )
                             return@forEachPart
@@ -357,7 +374,7 @@ fun Route.serviceRoutes(
         }
     }
 
-    put<Service.Id, ServiceRequest> { param, _ ->
+    put<Service.Id, ServiceUpdate> { param, _ ->
         val updateServiceMultipart = call.receiveMultipart()
 
         var name: String? = null
@@ -380,7 +397,9 @@ fun Route.serviceRoutes(
                         val fileBytes = part.streamProvider().readBytes()
                         val tempFile = File.createTempFile("upload-", part.originalFileName)
                         tempFile.writeBytes(fileBytes)
-                        imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
+                        val updateImageService = ImageService(client, tempFile, imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey)
+                        imageUrl = updateImageService.uploadImage()
+//                        imageUrl = uploadImageToHippo(tempFile, client, apiKey, url)
                         tempFile.delete()
                     }
                 }
@@ -391,7 +410,7 @@ fun Route.serviceRoutes(
         }
 
         try {
-            val service = ServiceRequest(name!!, description!!, price!!, imageUrl!!)
+            val service = ServiceUpdate(name!!, description!!, price!!, imageUrl!!)
             dao.updateService(param.id, service)
             call.respond(
                 ApiResponse.success(

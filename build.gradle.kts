@@ -25,6 +25,10 @@ application {
 
 repositories {
     mavenCentral()
+    google()
+    maven {
+        url = uri("https://download2.dynamsoft.com/maven/aar")
+    }
 }
 
 ktor {

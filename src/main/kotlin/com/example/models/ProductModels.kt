@@ -21,6 +21,7 @@ data class ProductRequest(
     val image: String? = null,
     val stock: Int,
     val reorderLevel: Int,
+    val supplierId: String,
 ) : java.io.Serializable {
     fun validate(): ProductRequest {
         org.valiktor.validate(this) {
@@ -29,6 +30,7 @@ data class ProductRequest(
             validate(ProductRequest::unitPrice).isPositive()
             validate(ProductRequest::stock).isPositive().isNotZero()
             validate(ProductRequest::reorderLevel).isPositive().isNotZero().validate { it >= stock }
+            validate(ProductRequest::supplierId).isNotBlank()
         }
         return this
     }
@@ -46,6 +48,8 @@ data class ProductResponse(
     val stock: Int,
     val reorderLevel: Int,
     val sku: String,
+    val supplierId: String,
+    val supplierName: String,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createdAt: LocalDateTime,
     @Serializable(with = LocalDateTimeSerializer::class)

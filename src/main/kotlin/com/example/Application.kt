@@ -23,6 +23,10 @@ fun Application.module() {
     val imgHippoApiKey = environment.config.property("imgHippo.apiKey").getString()
     val imgHippoUrl = environment.config.property("imgHippo.url").getString()
 
+//    Imgbb
+    val imgBbApiKey = environment.config.property("imgBb.apiKey").getString()
+    val imgBbUrl = environment.config.property("imgBb.url").getString()
+
     val secret = environment.config.property("jwt.secret").getString()
     val issuer = environment.config.property("jwt.issuer").getString()
     val audience = environment.config.property("jwt.audience").getString()
@@ -50,8 +54,12 @@ fun Application.module() {
     install(Resources)
     configureRouting(
         client = client,
-        apiKey = imgHippoApiKey,
-        url = imgHippoUrl,
+        imgHippoUrl = imgHippoUrl,
+        imgHippoApiKey = imgHippoApiKey,
+        imgBBUrl = imgBbUrl,
+        imgBBApiKey = imgBbApiKey,
+//        apiKey = imgHippoApiKey,
+//        url = imgHippoUrl,
         secret = secret,
         issuer = issuer,
         audience = audience

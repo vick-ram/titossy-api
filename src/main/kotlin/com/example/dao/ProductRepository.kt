@@ -12,4 +12,7 @@ interface ProductRepository {
     suspend fun updateProductQuantity(id: UUID, quantity: Int): Boolean
     suspend fun updateProduct(id: UUID, product: ProductRequest): Boolean
     suspend fun deleteProduct(id: UUID): Boolean
+    suspend fun getProductsBySupplier(supplierId: String): List<ProductResponse>
+    suspend fun getLowStockProducts(): List<ProductResponse>
+    suspend fun getProductsNeedingReorder(): List<ProductResponse>
 }

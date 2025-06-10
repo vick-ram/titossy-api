@@ -1,6 +1,7 @@
 package com.example.routing
 
 import com.example.commons.ApiResponse
+import com.example.commons.ImageService
 import com.example.commons.Product
 import com.example.commons.uploadImageToHippo
 import com.example.controllers.ProductRepositoryImpl
@@ -16,11 +17,16 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
 import java.math.BigDecimal
+import java.util.UUID
 
 fun Route.productRoutes(
     client: HttpClient,
-    apiKey: String,
-    url: String
+    imgHippoUrl: String,
+    imgHippoApiKey: String,
+    imgBBUrl: String,
+    imgBBApiKey: String,
+//    apiKey: String,
+//    url: String
 ) {
     val productRepository: ProductRepository = ProductRepositoryImpl()
 
@@ -33,6 +39,7 @@ fun Route.productRoutes(
         var image: String? = null
         var stock: Int? = null
         var reorderLevel: Int? = null
+        var supplierId: String? = null
 
         productMultipart.forEachPart { part ->
             when (part) {
@@ -43,6 +50,7 @@ fun Route.productRoutes(
                         "price" -> price = part.value.toBigDecimalOrNull()
                         "stock" -> stock = part.value.toIntOrNull()
                         "reorderLevel" -> reorderLevel = part.value.toIntOrNull()
+                        "supplier_id" -> supplierId = part.value
                     }
                 }
 
@@ -55,8 +63,10 @@ fun Route.productRoutes(
                         )
                         tempFile.writeBytes(fileBytes)
                         try {
-                            image = uploadImageToHippo(tempFile, client, apiKey, url)
-                        }catch (e: Exception) {
+                            val createImageService = ImageService(client, tempFile, imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey)
+                            image = createImageService.uploadImage()
+//                            image = uploadImageToHippo(tempFile, client, apiKey, url)
+                        } catch (e: Exception) {
                             e.printStackTrace()
                             call.respond(
                                 ApiResponse.error(
@@ -85,12 +95,15 @@ fun Route.productRoutes(
                 unitPrice = price!!,
                 image = image,
                 stock = stock!!,
-                reorderLevel = reorderLevel!!
+                reorderLevel = reorderLevel!!,
+                supplierId = supplierId!!,
             )
+            val newProduct = productRepository.addProduct(productRequest)
+            println("New product created: $newProduct")
             call.respond(
                 ApiResponse.success(
                     HttpStatusCode.Created,
-                    productRepository.addProduct(productRequest),
+                    newProduct,
                     "Product created successfully"
                 )
             )
@@ -128,6 +141,16 @@ fun Route.productRoutes(
                     )
                 }
 
+                query.supplierId != null -> {
+                    call.respond(
+                        ApiResponse.success(
+                            HttpStatusCode.OK,
+                            productRepository.getProductsBySupplier(query.supplierId),
+                            null
+                        )
+                    )
+                }
+
                 else -> {
                     call.respond(
                         ApiResponse.success(
@@ -158,6 +181,7 @@ fun Route.productRoutes(
         var image: String? = null
         var stock: Int? = null
         var reorderLevel: Int? = null
+        var supplierId: String? = null
 
         productUpdateMultipart.forEachPart { part ->
             when (part) {
@@ -168,6 +192,7 @@ fun Route.productRoutes(
                         "price" -> price = part.value.toBigDecimalOrNull()
                         "stock" -> stock = part.value.toIntOrNull()
                         "reorderLevel" -> reorderLevel = part.value.toIntOrNull()
+                        "supplier_id" -> supplierId = part.value
                     }
                 }
 
@@ -179,8 +204,21 @@ fun Route.productRoutes(
                             part.originalFileName
                         )
                         tempFile.writeBytes(fileBytes)
-                        image = uploadImageToHippo(tempFile, client, apiKey, url)
-                        tempFile.delete()
+                        try {
+                            val updateImageService = ImageService(client, tempFile, imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey)
+                            image = updateImageService.uploadImage()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            ApiResponse.error(
+                                HttpStatusCode.InternalServerError,
+                                "Error uploading image ${e.localizedMessage}"
+                            )
+                        } finally {
+                            if (tempFile.exists()) {
+                                tempFile.delete()
+                            }
+                        }
+//                        image = uploadImageToHippo(tempFile, client, apiKey, url)
                     }
                 }
 
@@ -196,7 +234,8 @@ fun Route.productRoutes(
                 unitPrice = price!!,
                 image = image,
                 stock = stock!!,
-                reorderLevel = reorderLevel!!
+                reorderLevel = reorderLevel!!,
+                supplierId = supplierId!!,
             )
             call.respond(
                 ApiResponse.success(
@@ -209,6 +248,7 @@ fun Route.productRoutes(
                 )
             )
         } catch (e: Exception) {
+            e.printStackTrace()
             call.respond(
                 ApiResponse.error(
                     HttpStatusCode.BadRequest,

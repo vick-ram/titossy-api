@@ -176,7 +176,8 @@ class Supplier(
 class Product(
     val search: String? = null,
     val category: String? = null,
-    val name: String? = null
+    val name: String? = null,
+    val supplierId: String? = null
 ) {
     @Resource("{id}")
     class Id(

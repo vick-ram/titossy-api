@@ -3,6 +3,8 @@ package com.example.controllers
 import com.example.commons.*
 import com.example.commons.DatabaseUtil.dbQuery
 import com.example.db.ActivityLogEntity
+import com.example.db.Booking
+import com.example.db.Bookings
 import com.example.db.Customer
 import com.example.db.CustomerTable
 import com.example.db.NotificationEntity
@@ -241,6 +243,16 @@ suspend fun forgotPassword(
             is NotFoundException -> throw e
             else -> throw UnexpectedError("An unexpected error occurred")
         }
+    }
+}
+
+suspend fun getCustomerDetails(id: String) = dbQuery {
+    /*This function gets all details including the joins*/
+    val customer = Customer.findById(id)
+
+    customer?.apply {
+        // Bookings (one-to-many)
+        val bookings = Booking.find { Bookings.customerId.eq(id) }
     }
 }
 
