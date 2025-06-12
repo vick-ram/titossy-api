@@ -57,10 +57,10 @@ class ServiceAddonRepositoryImpl : ServiceAddOnRepository {
         serviceAddOn: ServiceAddonUpdate
     ): Boolean = dbQuery {
         ServiceAddOn.findByIdAndUpdate(serviceAddOnId) { update ->
-            serviceAddOn.name?.let { update.name }
-            serviceAddOn.description?.let { update.description }
-            serviceAddOn.price?.let { update.price }
-            serviceAddOn.imageUrl?.let { update.imageUrl }
+            serviceAddOn.name?.let { update.name = it }
+            serviceAddOn.description?.let { update.description = it }
+            serviceAddOn.price?.let { update.price = it }
+            serviceAddOn.imageUrl?.let { update.imageUrl = it }
         }
         return@dbQuery true
     }
@@ -100,10 +100,10 @@ class ServiceRepositoryImpl : ServiceRepository {
 
     override suspend fun updateService(serviceId: UUID, service: ServiceUpdate): Boolean = dbQuery {
         Service.findByIdAndUpdate(serviceId) { update ->
-            service.name?.let { update.name }
-            service.description?.let { update.description }
-            service.price?.let { update.price }
-            service.imageUrl?.let { update.imageUrl }
+            service.name?.let { update.name = it }
+            service.description?.let { update.description = it }
+            service.price?.let { update.price = it }
+            service.imageUrl?.let { update.imageUrl = it }
         }
         return@dbQuery true
     }

@@ -100,10 +100,8 @@ fun fetchMessagesBetweenBetweenUsers(sender: String, receiver: String): List<Mes
 }
 
 fun Route.messageRoute() {
-    authenticate("auth-jwt") {
-        get("/api/messages/{receiver}") {
-            val principal = call.principal<JWTPrincipal>()
-            val sender = principal?.subject ?: return@get call.respond(HttpStatusCode.BadRequest)
+        get("/api/messages/{sender}/{receiver}") {
+            val sender = call.parameters["sender"] ?: return@get call.respond(HttpStatusCode.BadRequest)
             val receiver = call.parameters["receiver"] ?: return@get call.respond(HttpStatusCode.BadRequest)
 
             call.respond(
@@ -113,7 +111,6 @@ fun Route.messageRoute() {
                     message = "Messages for $receiver fetched successfully"
                 )
             )
-        }
     }
 }
 

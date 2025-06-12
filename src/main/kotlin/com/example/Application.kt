@@ -32,6 +32,8 @@ fun Application.module() {
     val audience = environment.config.property("jwt.audience").getString()
     val realm = environment.config.property("jwt.realm").getString()
 
+    println("Secret: $secret")
+
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json()

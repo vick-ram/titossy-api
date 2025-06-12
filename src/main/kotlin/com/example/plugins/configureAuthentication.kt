@@ -25,10 +25,10 @@ fun Application.configureAuthentication(
             realm = jwtRealm
             verifier(
                 makeJWTVerifier(
-                secret = secret,
-                issuer = issuer,
-                audience = audience
-            )
+                    secret = secret,
+                    issuer = issuer,
+                    audience = audience
+                )
             )
 
             validate { credential ->
@@ -38,37 +38,37 @@ fun Application.configureAuthentication(
 
                     emailClaim?.let { email ->
 
-                            val customer = filteredCustomers { it.email == email }?.firstOrNull()
-                            val supplier = filteredSuppliers { it.email == email }?.firstOrNull()
-                            val employee = filteredEmployees { it.email == email }?.firstOrNull()
+                        val customer = filteredCustomers { it.email == email }?.firstOrNull()
+                        val supplier = filteredSuppliers { it.email == email }?.firstOrNull()
+                        val employee = filteredEmployees { it.email == email }?.firstOrNull()
 
-                            when {
-                                customer != null -> {
-                                    val customerStatus = (customer as? CustomerResponse)?.status
-                                    if (customerStatus == ApprovalStatus.APPROVED) {
-                                        JWTPrincipal(credential.payload)
-                                    } else {
-                                        throw AccountPendingException("Your account is pending approval")
-                                    }
-                                }
-
-                                supplier != null -> {
-                                    val supplierStatus = (supplier as? SupplierResponse)?.status
-                                    if (supplierStatus == ApprovalStatus.APPROVED) {
-                                        JWTPrincipal(credential.payload)
-                                    } else {
-                                        throw AccountPendingException("Your account is pending approval")
-                                    }
-                                }
-
-                                employee != null && role != null -> {
+                        when {
+                            customer != null -> {
+                                val customerStatus = customer.status
+                                if (customerStatus == ApprovalStatus.APPROVED) {
                                     JWTPrincipal(credential.payload)
-                                }
-
-                                else -> {
-                                    null
+                                } else {
+                                    throw AccountPendingException("Your account is pending approval")
                                 }
                             }
+
+                            supplier != null -> {
+                                val supplierStatus = supplier.status
+                                if (supplierStatus == ApprovalStatus.APPROVED) {
+                                    JWTPrincipal(credential.payload)
+                                } else {
+                                    throw AccountPendingException("Your account is pending approval")
+                                }
+                            }
+
+                            employee != null && role != null -> {
+                                JWTPrincipal(credential.payload)
+                            }
+
+                            else -> {
+                                null
+                            }
+                        }
                     }
                 } catch (e: Exception) {
                     lastException.set(e)

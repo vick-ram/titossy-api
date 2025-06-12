@@ -37,6 +37,18 @@ data class ProductRequest(
 }
 
 @Serializable
+data class ProductUpdate(
+    val name: String? = null,
+    val description: String? = null,
+    @Serializable(with = BigDecimalSerializer::class)
+    val unitPrice: BigDecimal? = null,
+    val image: String? = null,
+    val stock: Int? = null,
+    val reorderLevel: Int? = null,
+    val supplierId: String? = null,
+)
+
+@Serializable
 data class ProductResponse(
     @Serializable(with = UUIDSerializer::class)
     val productId: UUID,

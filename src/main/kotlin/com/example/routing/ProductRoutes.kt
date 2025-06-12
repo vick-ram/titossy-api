@@ -7,6 +7,7 @@ import com.example.commons.uploadImageToHippo
 import com.example.controllers.ProductRepositoryImpl
 import com.example.dao.ProductRepository
 import com.example.models.ProductRequest
+import com.example.models.ProductUpdate
 import io.ktor.client.*
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -63,7 +64,8 @@ fun Route.productRoutes(
                         )
                         tempFile.writeBytes(fileBytes)
                         try {
-                            val createImageService = ImageService(client, tempFile, imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey)
+                            val createImageService =
+                                ImageService(client, tempFile, imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey)
                             image = createImageService.uploadImage()
 //                            image = uploadImageToHippo(tempFile, client, apiKey, url)
                         } catch (e: Exception) {
@@ -171,7 +173,7 @@ fun Route.productRoutes(
         }
     }
 
-    put<Product.Id, ProductRequest> { param, _ ->
+    put<Product.Id, ProductUpdate> { param, _ ->
 
         val productUpdateMultipart = call.receiveMultipart()
 
@@ -205,7 +207,8 @@ fun Route.productRoutes(
                         )
                         tempFile.writeBytes(fileBytes)
                         try {
-                            val updateImageService = ImageService(client, tempFile, imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey)
+                            val updateImageService =
+                                ImageService(client, tempFile, imgHippoUrl, imgHippoApiKey, imgBBUrl, imgBBApiKey)
                             image = updateImageService.uploadImage()
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -228,7 +231,7 @@ fun Route.productRoutes(
         }
 
         try {
-            val productRequest = ProductRequest(
+            val productRequest = ProductUpdate(
                 name = name!!,
                 description = description!!,
                 unitPrice = price!!,

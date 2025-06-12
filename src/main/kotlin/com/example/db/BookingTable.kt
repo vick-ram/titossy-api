@@ -142,7 +142,7 @@ class NotificationEntity(id: EntityID<String>): StringUUIDEntity(id, Notificatio
     var booking by Booking referencedOn Notifications.bookingId
 
     fun toNotification() = Notification(
-        id = UUID.fromString(this.id.value),
+        id = this.id.value,
         message = this.message,
         bookingId = this.booking.id.value,
         state = this.state,

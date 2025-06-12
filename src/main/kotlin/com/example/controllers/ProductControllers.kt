@@ -10,7 +10,7 @@ import com.example.db.Supplier
 import com.example.db.getFirstLettersOfWords
 import com.example.models.ProductRequest
 import com.example.models.ProductResponse
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import com.example.models.ProductUpdate
 import org.jetbrains.exposed.sql.selectAll
 import java.util.*
 
@@ -61,17 +61,17 @@ class ProductRepositoryImpl : ProductRepository {
 
     override suspend fun updateProduct(
         id: UUID,
-        product: ProductRequest
+        product: ProductUpdate
     ): Boolean = dbQuery {
-        val supplier = Supplier.findById(product.supplierId)
+        val supplier = product.supplierId?.let { Supplier.findById(it) }
             ?: throw IllegalArgumentException("Supplier with id ${product.supplierId} not found")
         Product.findByIdAndUpdate(id) { update ->
-            update.name = product.name
-            update.description = product.description
-            update.price = product.unitPrice
+            product.name?.let { update.name = it }
+            product.description?.let{ update.description = it}
+            product.unitPrice?.let {update.price = it  }
             update.image = product.image
-            update.stock = product.stock
-            update.reorderLevel = product.reorderLevel
+            product.stock?.let{update.stock = it}
+            product.reorderLevel?.let{update.reorderLevel = it}
             update.supplier = supplier
         }
         return@dbQuery true
